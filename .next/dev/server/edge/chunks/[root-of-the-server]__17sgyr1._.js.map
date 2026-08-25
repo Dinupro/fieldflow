@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Dineth%20PC/.antigravity-ide/fieldflow/fieldflow/middleware.ts"],"sourcesContent":["import { withAuth } from \"next-auth/middleware\";\n\nexport default withAuth({\n  callbacks: {\n    authorized: ({ token }) => !!token,\n  },\n  pages: {\n    signIn: \"/login\",\n  },\n});\n\nexport const config = {\n  matcher: [\"/dashboard/:path*\"],\n};\n"],"names":["callbacks","authorized","token","pages","signIn","config","matcher"],"mappings":";;;;;;AAAA;;uCAEe,IAAA,2KAAQ,EAAC;IACtBA,WAAW;QACTC,YAAY,CAAC,EAAEC,KAAK,EAAE,GAAK,CAAC,CAACA;IAC/B;IACAC,OAAO;QACLC,QAAQ;IACV;AACF;AAEO,MAAMC,SAAS;IACpBC,SAAS;QAAC;KAAoB;AAChC"}}]
+}

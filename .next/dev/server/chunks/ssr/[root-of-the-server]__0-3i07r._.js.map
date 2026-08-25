@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Dineth%20PC/.antigravity-ide/fieldflow/app/providers.tsx"],"sourcesContent":["\"use client\";\n\nexport default function Providers({\n  children,\n}: {\n  children: React.ReactNode;\n}) {\n  return <>{children}</>;\n}"],"names":["Providers","children"],"mappings":";;;;;AAAA;;AAEe,SAASA,UAAU,EAChCC,QAAQ,EAGT;IACC,qBAAO;kBAAGA;;;;;;AACZ"}}]
+}
