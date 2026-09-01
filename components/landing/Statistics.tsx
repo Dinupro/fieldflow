@@ -79,7 +79,7 @@ export default function Statistics() {
       {/* Glow Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [bg-size:24px_24px] opacity-20 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
@@ -90,7 +90,7 @@ export default function Statistics() {
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
             Scale Your Field Workforce with{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400">
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-blue-400 via-cyan-400 to-indigo-400">
               Unmatched Reliability
             </span>
           </h2>
@@ -110,7 +110,7 @@ export default function Statistics() {
               >
                 {/* Top Glow Accent Bar */}
                 <div
-                  className={`absolute top-0 left-8 right-8 h-1 rounded-b-full bg-gradient-to-r ${stat.color} opacity-80 group-hover:opacity-100 transition-opacity`}
+                  className={`absolute top-0 left-8 right-8 h-1 rounded-b-full bg-linear-to-r ${stat.color} opacity-80 group-hover:opacity-100 transition-opacity`}
                 />
 
                 <div className="flex items-center justify-between mb-6">
@@ -144,7 +144,7 @@ export default function Statistics() {
             const HIcon = h.icon;
             return (
               <div key={h.title} className="flex items-start gap-3 p-3">
-                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 flex-shrink-0 mt-0.5">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 shrink-0 mt-0.5">
                   <HIcon className="w-4 h-4" />
                 </div>
                 <div>

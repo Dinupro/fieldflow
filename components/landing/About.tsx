@@ -52,7 +52,7 @@ export default function About() {
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
               Pioneering the Future of{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-blue-600 to-indigo-600">
                 Field Service Intelligence
               </span>
             </h2>

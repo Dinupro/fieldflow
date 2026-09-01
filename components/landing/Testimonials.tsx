@@ -126,7 +126,7 @@ export default function Testimonials() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-2xl font-black text-emerald-400">99.8%</span>
-            <span className="text-xs text-slate-300 max-w-[120px] leading-tight">
+            <span className="text-xs text-slate-300 max-w-30 leading-tight">
               Average First-Visit Resolution
             </span>
           </div>

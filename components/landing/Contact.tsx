@@ -113,7 +113,7 @@ export default function Contact() {
             </div>
 
             {/* SLA Trust Tag */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 flex items-center gap-3">
+            <div className="p-4 rounded-2xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-100 flex items-center gap-3">
               <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0" />
               <div className="text-xs text-slate-700">
                 <strong>Guaranteed Response:</strong> All standard web inquiries receive a coordinator reply within 15 minutes during business hours.

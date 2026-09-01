@@ -114,21 +114,19 @@ export default function HowItWorks() {
           <div className="inline-flex p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/80 mt-4">
             <button
               onClick={() => setActivePersona("business")}
-              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activePersona === "business"
+              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${activePersona === "business"
                   ? "bg-white text-slate-900 shadow-md shadow-slate-300"
                   : "text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               For Businesses & Clients
             </button>
             <button
               onClick={() => setActivePersona("technician")}
-              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activePersona === "technician"
+              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${activePersona === "technician"
                   ? "bg-white text-slate-900 shadow-md shadow-slate-300"
                   : "text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               For Field Technicians
             </button>
@@ -156,7 +154,7 @@ export default function HowItWorks() {
                   </div>
 
                   {/* Icon */}
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md mb-4 group-hover:scale-105 transition-transform">
                     <Icon className="w-6 h-6" />
                   </div>
 
@@ -186,7 +184,7 @@ export default function HowItWorks() {
         {/* Bottom Callout */}
         <div className="mt-14 p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>

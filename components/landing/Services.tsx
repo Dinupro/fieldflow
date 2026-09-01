@@ -157,11 +157,10 @@ export default function Services() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                  activeCategory === cat.id
+                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${activeCategory === cat.id
                     ? "bg-blue-600 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                  }`}
               >
                 {cat.label}
               </button>
@@ -182,7 +181,7 @@ export default function Services() {
                   {/* Top Icon & Badge */}
                   <div className="flex items-center justify-between mb-4">
                     <div
-                      className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${service.color} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}
+                      className={`w-12 h-12 rounded-2xl bg-linear-to-tr ${service.color} flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform`}
                     >
                       <Icon className="w-6 h-6" />
                     </div>
@@ -210,7 +209,7 @@ export default function Services() {
                         key={skill}
                         className="flex items-center gap-1.5 text-xs text-slate-700 font-medium"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>{skill}</span>
                       </div>
                     ))}
@@ -239,9 +238,9 @@ export default function Services() {
         </div>
 
         {/* Bottom Banner inside Services */}
-        <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-linear-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0">
               <ShieldAlert className="w-6 h-6 text-blue-400" />
             </div>
             <div>
@@ -255,7 +254,7 @@ export default function Services() {
           </div>
           <a
             href="#contact"
-            className="flex-shrink-0 px-6 py-3 rounded-xl bg-white text-slate-900 hover:bg-blue-50 font-bold text-sm shadow-md transition-all whitespace-nowrap"
+            className="shrink-0 px-6 py-3 rounded-xl bg-white text-slate-900 hover:bg-blue-50 font-bold text-sm shadow-md transition-all whitespace-nowrap"
           >
             Talk to Enterprise Desk
           </a>

@@ -94,7 +94,7 @@ export default function Features() {
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             Engineered for High-Velocity{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600">
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-blue-600 via-indigo-600 to-cyan-600">
               Field Operations
             </span>
           </h2>
@@ -112,16 +112,14 @@ export default function Features() {
               <button
                 key={feature.title}
                 onClick={() => setActiveTab(idx)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                  activeTab === idx
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${activeTab === idx
                     ? "bg-white text-slate-900 shadow-md shadow-slate-200"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
-                }`}
+                  }`}
               >
                 <Icon
-                  className={`w-4 h-4 ${
-                    activeTab === idx ? "text-blue-600" : "text-slate-400"
-                  }`}
+                  className={`w-4 h-4 ${activeTab === idx ? "text-blue-600" : "text-slate-400"
+                    }`}
                 />
                 <span>{feature.title.split("&")[0]}</span>
               </button>
@@ -149,7 +147,7 @@ export default function Features() {
               <div className="space-y-3 pt-2">
                 {features[activeTab].bullets.map((bullet) => (
                   <div key={bullet} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs">
+                    <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                       ✓
                     </div>
                     <span className="text-sm font-medium text-slate-700">{bullet}</span>
@@ -230,7 +228,7 @@ export default function Features() {
 
                 {activeTab === 1 && (
                   <div className="space-y-3">
-                    <div className="h-36 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 relative overflow-hidden p-4 flex flex-col justify-between text-white">
+                    <div className="h-36 rounded-xl bg-linear-to-br from-slate-800 to-slate-900 relative overflow-hidden p-4 flex flex-col justify-between text-white">
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-bold text-cyan-400 flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5" /> Geofence: 200m Radius

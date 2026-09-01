@@ -68,7 +68,7 @@ export default function Footer() {
           {/* Brand Col */}
           <div className="lg:col-span-5 space-y-4">
             <Link href="#hero" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
                 <Wrench className="w-5 h-5 text-white transform -rotate-45" />
               </div>
               <span className="text-2xl font-black tracking-tight text-white">
