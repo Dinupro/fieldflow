@@ -236,7 +236,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <span className="font-semibold text-slate-800 block truncate max-w-[140px]">
+                      <span className="font-semibold text-slate-800 block truncate max-w-35">
                         {job.customer}
                       </span>
                       <span className="text-[10px] text-slate-400 flex items-center gap-1">
@@ -297,8 +297,8 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               </span>
             </div>
 
-            <div className="h-36 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 border border-slate-700/60 p-4 relative flex flex-col justify-between overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
+            <div className="h-36 rounded-2xl bg-linear-to-br from-slate-800 to-slate-950 border border-slate-700/60 p-4 relative flex flex-col justify-between overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [bg-size:16px_16px] opacity-20 pointer-events-none" />
               <div className="relative z-10 flex justify-between text-xs font-semibold">
                 <span className="text-slate-300">Austin Operations Cluster</span>
                 <span className="text-emerald-400">18 Techs Online</span>

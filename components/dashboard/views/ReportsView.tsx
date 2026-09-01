@@ -44,7 +44,7 @@ export default function ReportsView() {
 
       {exportToast && (
         <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Executive SLA performance report generated and downloaded.</span>
         </div>
       )}
@@ -127,7 +127,7 @@ export default function ReportsView() {
           </div>
 
           <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/60 text-xs text-blue-900 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
             <span>Consolidated monthly statements automatically generated in PDF format on the 1st of every month.</span>
           </div>
         </div>

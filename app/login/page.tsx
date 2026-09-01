@@ -138,7 +138,7 @@ export default function LoginPage() {
               {/* Operational Proof Highlights */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
@@ -152,7 +152,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                     <Users className="w-4 h-4" />
                   </div>
                   <div>
@@ -247,7 +247,7 @@ export default function LoginPage() {
                   {/* General error message banner if applicable */}
                   {errors.general && (
                     <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                       <span>{errors.general}</span>
                     </div>
                   )}
@@ -357,7 +357,7 @@ export default function LoginPage() {
                       </div>
                       {errors.email && (
                         <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.email}</span>
                         </p>
                       )}
@@ -416,7 +416,7 @@ export default function LoginPage() {
                       </div>
                       {errors.password && (
                         <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.password}</span>
                         </p>
                       )}

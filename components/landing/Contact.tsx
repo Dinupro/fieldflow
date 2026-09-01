@@ -58,7 +58,7 @@ export default function Contact() {
             {/* Direct Contact Cards */}
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
@@ -78,7 +78,7 @@ export default function Contact() {
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
@@ -98,7 +98,7 @@ export default function Contact() {
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
@@ -114,7 +114,7 @@ export default function Contact() {
 
             {/* SLA Trust Tag */}
             <div className="p-4 rounded-2xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-100 flex items-center gap-3">
-              <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0" />
+              <ShieldCheck className="w-6 h-6 text-blue-600 shrink-0" />
               <div className="text-xs text-slate-700">
                 <strong>Guaranteed Response:</strong> All standard web inquiries receive a coordinator reply within 15 minutes during business hours.
               </div>

@@ -159,13 +159,12 @@ export default function TopNavbar({
                       className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/50 border border-slate-100 transition-colors flex items-start gap-3 text-xs"
                     >
                       <div
-                        className={`p-1.5 rounded-lg flex-shrink-0 mt-0.5 ${
-                          n.type === "warning"
+                        className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${n.type === "warning"
                             ? "bg-amber-100 text-amber-600"
                             : n.type === "success"
-                            ? "bg-emerald-100 text-emerald-600"
-                            : "bg-blue-100 text-blue-600"
-                        }`}
+                              ? "bg-emerald-100 text-emerald-600"
+                              : "bg-blue-100 text-blue-600"
+                          }`}
                       >
                         <NIcon className="w-4 h-4" />
                       </div>
@@ -174,7 +173,7 @@ export default function TopNavbar({
                           <span className="font-bold text-slate-900 truncate">
                             {n.title}
                           </span>
-                          <span className="text-[10px] text-slate-400 flex-shrink-0">
+                          <span className="text-[10px] text-slate-400 shrink-0">
                             {n.time}
                           </span>
                         </div>

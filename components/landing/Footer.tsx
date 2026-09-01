@@ -103,7 +103,7 @@ export default function Footer() {
             </div>
 
             <form onSubmit={handleSubscribe} className="mt-4 flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-grow">
+              <div className="relative grow">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
@@ -125,7 +125,7 @@ export default function Footer() {
 
             {subscribed && (
               <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1.5 animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>Thank you! You are subscribed to FieldFlow Insights.</span>
               </div>
             )}

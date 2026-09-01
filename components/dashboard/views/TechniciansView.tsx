@@ -138,7 +138,7 @@ export default function TechniciansView() {
 
       {dispatchToast && (
         <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center gap-2 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
           <span>{dispatchToast}</span>
         </div>
       )}

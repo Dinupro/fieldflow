@@ -182,7 +182,7 @@ export default function RegisterPage() {
               {/* Trust Badges */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
@@ -196,7 +196,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
@@ -257,7 +257,7 @@ export default function RegisterPage() {
                     }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                         role === "customer"
                           ? "bg-blue-600 text-white"
                           : "bg-slate-100 text-slate-500"
@@ -265,7 +265,7 @@ export default function RegisterPage() {
                     >
                       <Building2 className="w-5 h-5" />
                     </div>
-                    <div className="space-y-0.5 flex-grow">
+                    <div className="space-y-0.5 grow">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold text-slate-900">
                           Customer
@@ -295,7 +295,7 @@ export default function RegisterPage() {
                     }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                         role === "technician"
                           ? "bg-blue-600 text-white"
                           : "bg-slate-100 text-slate-500"
@@ -303,7 +303,7 @@ export default function RegisterPage() {
                     >
                       <Wrench className="w-5 h-5" />
                     </div>
-                    <div className="space-y-0.5 flex-grow">
+                    <div className="space-y-0.5 grow">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold text-slate-900">
                           Technician
@@ -376,7 +376,7 @@ export default function RegisterPage() {
                       </div>
                       {errors.fullName && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.fullName}</span>
                         </p>
                       )}
@@ -414,7 +414,7 @@ export default function RegisterPage() {
                       </div>
                       {errors.email && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.email}</span>
                         </p>
                       )}
@@ -451,7 +451,7 @@ export default function RegisterPage() {
                       </div>
                       {errors.phone && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.phone}</span>
                         </p>
                       )}
@@ -497,7 +497,7 @@ export default function RegisterPage() {
                       </div>
                       {errors.companyOrTrade && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.companyOrTrade}</span>
                         </p>
                       )}
@@ -583,7 +583,7 @@ export default function RegisterPage() {
 
                       {errors.password && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.password}</span>
                         </p>
                       )}
@@ -631,7 +631,7 @@ export default function RegisterPage() {
                       </div>
                       {errors.confirmPassword && (
                         <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{errors.confirmPassword}</span>
                         </p>
                       )}
@@ -647,7 +647,7 @@ export default function RegisterPage() {
                           setFormData({ ...formData, termsAccepted: nextState });
                           if (nextState) clearError("terms");
                         }}
-                        className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                           formData.termsAccepted
                             ? "bg-blue-600 border-blue-600 text-white"
                             : "border-slate-300 bg-white"
@@ -675,7 +675,7 @@ export default function RegisterPage() {
                     </label>
                     {errors.terms && (
                       <p className="mt-1 text-[11px] text-rose-600 flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                         <span>{errors.terms}</span>
                       </p>
                     )}
