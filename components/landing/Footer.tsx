@@ -9,8 +9,6 @@ import {
   Mail,
   ArrowRight,
   Sparkles,
-  Globe,
-  Radio,
 } from "lucide-react";
 
 export default function Footer() {
@@ -28,35 +26,32 @@ export default function Footer() {
 
   const footerLinks = {
     services: [
-      { name: "Structured Cabling & Fiber", href: "#services" },
-      { name: "POS & Retail Rollouts", href: "#services" },
-      { name: "Server & Rack Hardware", href: "#services" },
-      { name: "CCTV & Biometric Access", href: "#services" },
-      { name: "Smart IoT & Building Controls", href: "#services" },
-      { name: "Emergency Break-Fix (2hr SLA)", href: "#services" },
+      { name: "Customer Management", href: "/services" },
+      { name: "Technician Management", href: "/services" },
+      { name: "Work Order Management", href: "/services" },
+      { name: "Real-time Job Tracking", href: "/services" },
+      { name: "SLA Performance Reporting", href: "/services" },
+      { name: "Commercial IT & Cabling", href: "/services" },
     ],
     platform: [
-      { name: "AI Dispatch & Matching", href: "#features" },
-      { name: "Live GPS & Milestone Tracking", href: "#features" },
-      { name: "Digital Photo Proof & E-Sign", href: "#features" },
-      { name: "Automated Escrow Billing", href: "#features" },
-      { name: "Enterprise SLA Engine", href: "#features" },
-      { name: "Technician Mobile App", href: "#features" },
+      { name: "Operations Dashboard", href: "/dashboard" },
+      { name: "Live GPS Telemetry", href: "/dashboard" },
+      { name: "Technician Fleet Directory", href: "/dashboard" },
+      { name: "Escrow Payment Settlement", href: "/services" },
+      { name: "Automated Dispatch Waterfall", href: "/services" },
     ],
     company: [
-      { name: "About FieldFlow", href: "#about" },
-      { name: "Operational Statistics", href: "#statistics" },
-      { name: "Client Testimonials", href: "#testimonials" },
-      { name: "How It Works", href: "#how-it-works" },
-      { name: "Contact & Dispatch Desk", href: "#contact" },
-      { name: "Careers & Technician Network", href: "#how-it-works" },
+      { name: "About FieldFlow", href: "/about" },
+      { name: "Services Catalog", href: "/services" },
+      { name: "Contact & Dispatch Desk", href: "/contact" },
+      { name: "Client Portal Login", href: "/login" },
+      { name: "Join Technician Network", href: "/register" },
     ],
     legal: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Contractor Compliance Agreement", href: "#" },
-      { name: "Security & SOC 2 Compliance", href: "#" },
-      { name: "Cookie Preferences", href: "#" },
+      { name: "Privacy Policy", href: "/about" },
+      { name: "Terms of Service", href: "/about" },
+      { name: "Contractor Compliance Agreement", href: "/about" },
+      { name: "Security & SOC 2 Compliance", href: "/about" },
     ],
   };
 
@@ -67,7 +62,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pb-14 border-b border-slate-800/80">
           {/* Brand Col */}
           <div className="lg:col-span-5 space-y-4">
-            <Link href="#hero" className="flex items-center gap-3 group">
+            <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
                 <Wrench className="w-5 h-5 text-white transform -rotate-45" />
               </div>
@@ -141,17 +136,17 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12">
           <div>
             <h5 className="text-xs uppercase font-extrabold tracking-wider text-slate-200 mb-4">
-              Field Services
+              Capabilities
             </h5>
             <ul className="space-y-2.5">
               {footerLinks.services.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-xs text-slate-400 hover:text-white transition-colors"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -159,17 +154,17 @@ export default function Footer() {
 
           <div>
             <h5 className="text-xs uppercase font-extrabold tracking-wider text-slate-200 mb-4">
-              Platform Features
+              Operations Hub
             </h5>
             <ul className="space-y-2.5">
               {footerLinks.platform.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-xs text-slate-400 hover:text-white transition-colors"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -182,12 +177,12 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-xs text-slate-400 hover:text-white transition-colors"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -200,12 +195,12 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-xs text-slate-400 hover:text-white transition-colors"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

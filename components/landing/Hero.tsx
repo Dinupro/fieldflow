@@ -146,33 +146,33 @@ export default function Hero() {
                       <strong>{selectedService}</strong> in your area.
                     </span>
                   </div>
-                  <a
-                    href="#contact"
+                  <Link
+                    href="/register"
                     className="underline font-bold text-emerald-900 hover:text-emerald-700 ml-2"
                   >
                     Dispatch Now
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
 
             {/* Quick Action Buttons & Trust Highlights */}
             <div className="pt-2 flex flex-wrap items-center gap-4">
-              <a
-                href="#contact"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 hover:-translate-y-0.5 transition-all"
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 hover:-translate-y-0.5 transition-all"
               >
-                <span>Request a Work Order</span>
+                <span>Get Started Free</span>
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </Link>
 
-              <a
-                href="#how-it-works"
-                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-sm shadow-xs hover:border-slate-300 transition-all"
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm shadow-xs hover:border-slate-300 transition-all"
               >
                 <Zap className="w-4 h-4 text-amber-500" />
-                <span>See How It Works</span>
-              </a>
+                <span>Sign In to Portal</span>
+              </Link>
             </div>
 
             {/* Mini Trust Badges */}

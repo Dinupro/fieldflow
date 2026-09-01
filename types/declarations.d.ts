@@ -55,6 +55,26 @@ declare module "lucide-react" {
   export const Mail: LucideIcon;
   export const Headphones: LucideIcon;
   export const Send: LucideIcon;
+  export const Eye: LucideIcon;
+  export const EyeOff: LucideIcon;
+  export const AlertCircle: LucideIcon;
+  export const KeyRound: LucideIcon;
+  export const ArrowLeft: LucideIcon;
+  export const Check: LucideIcon;
+  export const User: LucideIcon;
+  export const LayoutDashboard: LucideIcon;
+  export const Calendar: LucideIcon;
+  export const LogOut: LucideIcon;
+  export const Bell: LucideIcon;
+  export const ChevronLeft: LucideIcon;
+  export const Plus: LucideIcon;
+  export const Filter: LucideIcon;
+  export const Download: LucideIcon;
+  export const AlertTriangle: LucideIcon;
+  export const MoreVertical: LucideIcon;
+  export const Settings: LucideIcon;
+  export const ChevronDown: LucideIcon;
+  export const Sliders: LucideIcon;
 }
 
 declare module "prisma/config" {

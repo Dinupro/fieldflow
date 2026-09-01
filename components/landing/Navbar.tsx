@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Wrench,
   Menu,
   X,
   ChevronRight,
   ShieldCheck,
-  PhoneCall,
   UserCheck,
   Sparkles,
 } from "lucide-react";
@@ -16,6 +16,7 @@ import {
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,27 +31,24 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: "Home", href: "#hero" },
-    { label: "Services", href: "#services" },
-    { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Stats", href: "#statistics" },
-    { label: "Testimonials", href: "#testimonials" },
-    { label: "About", href: "#about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
+    { label: "Services", href: "/services" },
+    { label: "Contact", href: "/contact" },
   ];
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
           ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200/80 py-3"
           : "bg-white/70 backdrop-blur-sm border-b border-slate-100 py-4"
-        }`}
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo & Brand */}
-          <Link href="#hero" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
               <Wrench className="w-5 h-5 text-white transform -rotate-45" />
             </div>
@@ -68,16 +66,23 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 transition-all"
-              >
-                {link.label}
-              </a>
-            ))}
+          <nav className="hidden md:flex items-center gap-1 xl:gap-2">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    isActive
+                      ? "text-blue-600 bg-blue-50/80 font-bold"
+                      : "text-slate-600 hover:text-blue-600 hover:bg-blue-50/40"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop Right CTAs */}
@@ -89,26 +94,26 @@ export default function Navbar() {
               <UserCheck className="w-4 h-4 text-slate-400" />
               <span>Login</span>
             </Link>
-            <a
-              href="#contact"
+            <Link
+              href="/register"
               className="relative inline-flex items-center justify-center p-0.5 overflow-hidden rounded-xl font-semibold group shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all"
             >
               <span className="w-full h-full bg-linear-to-r from-blue-600 to-indigo-600 group-hover:from-blue-700 group-hover:to-indigo-700 text-white text-sm px-4 py-2 rounded-[10px] flex items-center gap-1.5 transition-all">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Get Started</span>
+                <span>Register</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </span>
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Menu Toggle Button */}
-          <div className="flex lg:hidden items-center gap-2">
-            <a
-              href="#contact"
-              className="sm:hidden text-xs bg-blue-600 text-white font-medium px-3 py-1.5 rounded-lg"
+          <div className="flex md:hidden items-center gap-2">
+            <Link
+              href="/register"
+              className="sm:hidden text-xs bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg"
             >
-              Get Started
-            </a>
+              Register
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               type="button"
@@ -127,19 +132,26 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-slate-200 bg-white/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-3 shadow-xl">
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center justify-between"
-              >
-                <span>{link.label}</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              </a>
-            ))}
+        <div className="md:hidden border-b border-slate-200 bg-white/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-3 shadow-xl animate-fadeIn">
+          <div className="grid grid-cols-1 gap-1 pt-2">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-between ${
+                    isActive
+                      ? "bg-blue-50 text-blue-600 font-bold"
+                      : "text-slate-700 hover:bg-blue-50/50 hover:text-blue-600"
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </Link>
+              );
+            })}
           </div>
 
           <div className="pt-4 border-t border-slate-100 space-y-2">
@@ -156,13 +168,13 @@ export default function Navbar() {
               >
                 Login
               </Link>
-              <a
-                href="#contact"
+              <Link
+                href="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 text-center shadow-md shadow-blue-600/20"
               >
-                Get Started
-              </a>
+                Register
+              </Link>
             </div>
           </div>
         </div>

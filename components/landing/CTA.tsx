@@ -41,14 +41,14 @@ export default function CTA() {
 
           {/* Dual CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <a
-              href="#contact"
+            <Link
+              href="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-linear-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-blue-600/30 hover:shadow-blue-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <Zap className="w-5 h-5" />
               <span>Get Started Now</span>
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
 
             <Link
               href="/login"
