@@ -26,8 +26,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 function middleware(request) {
     const sessionToken = request.cookies.get("better-auth.session_token")?.value || request.cookies.get("__Secure-better-auth.session_token")?.value;
     const { pathname } = request.nextUrl;
-    // Protect /dashboard and /customers and all subroutes
-    if (pathname.startsWith("/dashboard") || pathname.startsWith("/customers")) {
+    // Protect /dashboard, /customers, and /technicians (and all subroutes)
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/customers") || pathname.startsWith("/technicians")) {
         if (!sessionToken) {
             const loginUrl = new URL("/login", request.url);
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(loginUrl);
@@ -47,6 +47,8 @@ const config = {
         "/dashboard/:path*",
         "/customers/:path*",
         "/customers",
+        "/technicians/:path*",
+        "/technicians",
         "/login",
         "/register"
     ]

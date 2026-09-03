@@ -12,6 +12,14 @@ self.__MIDDLEWARE_MATCHERS = [
     "originalSource": "/customers"
   },
   {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/technicians(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+    "originalSource": "/technicians/:path*"
+  },
+  {
+    "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/technicians(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+    "originalSource": "/technicians"
+  },
+  {
     "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/login(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
     "originalSource": "/login"
   },

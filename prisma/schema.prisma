@@ -102,15 +102,21 @@ model Verification {
 }
 
 model Technician {
-  id        String           @id @default(uuid()) @db.Uuid
-  userId    String           @unique @db.Uuid
-  name      String           @db.VarChar(100)
-  phone     String?          @db.VarChar(20)
-  skills    String[]
-  status    TechnicianStatus
-  createdAt DateTime         @default(now()) @db.Timestamp
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workOrders WorkOrder[]
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String?          @unique @db.Uuid
+  name           String           @db.VarChar(100)
+  email          String?          @db.VarChar(255)
+  phone          String?          @db.VarChar(20)
+  specialization String?          @db.VarChar(100)
+  skills         String[]
+  status         TechnicianStatus @default(AVAILABLE)
+  serviceArea    String?          @db.VarChar(100)
+  notes          String?
+  avatar         String?
+  createdAt      DateTime         @default(now()) @db.Timestamp
+  updatedAt      DateTime?        @updatedAt @db.Timestamp
+  user           User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workOrders     WorkOrder[]
 }
 
 model Customer {
