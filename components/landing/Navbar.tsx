@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "@/lib/auth-client";
 import {
   Wrench,
   Menu,
@@ -11,12 +12,18 @@ import {
   ShieldCheck,
   UserCheck,
   Sparkles,
+  LayoutDashboard,
+  LogOut,
 } from "lucide-react";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  const isAuthenticated = Boolean(!isPending && session?.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +36,12 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -87,33 +100,64 @@ export default function Navbar() {
 
           {/* Desktop Right CTAs */}
           <div className="hidden sm:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100/80 transition-all flex items-center gap-1.5"
-            >
-              <UserCheck className="w-4 h-4 text-slate-400" />
-              <span>Login</span>
-            </Link>
-            <Link
-              href="/register"
-              className="relative inline-flex items-center justify-center p-0.5 overflow-hidden rounded-xl font-semibold group shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all"
-            >
-              <span className="w-full h-full bg-linear-to-r from-blue-600 to-indigo-600 group-hover:from-blue-700 group-hover:to-indigo-700 text-white text-sm px-4 py-2 rounded-[10px] flex items-center gap-1.5 transition-all">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Register</span>
-                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-blue-600 bg-blue-50/80 hover:bg-blue-100 transition-all flex items-center gap-1.5 shadow-2xs"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                  <span>Dashboard</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200/80 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-rose-500" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100/80 transition-all flex items-center gap-1.5"
+                >
+                  <UserCheck className="w-4 h-4 text-slate-400" />
+                  <span>Login</span>
+                </Link>
+                <Link
+                  href="/register"
+                  className="relative inline-flex items-center justify-center p-0.5 overflow-hidden rounded-xl font-semibold group shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all"
+                >
+                  <span className="w-full h-full bg-linear-to-r from-blue-600 to-indigo-600 group-hover:from-blue-700 group-hover:to-indigo-700 text-white text-sm px-4 py-2 rounded-[10px] flex items-center gap-1.5 transition-all">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Register</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle Button */}
           <div className="flex md:hidden items-center gap-2">
-            <Link
-              href="/register"
-              className="sm:hidden text-xs bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg"
-            >
-              Register
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="sm:hidden text-xs bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="sm:hidden text-xs bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg"
+              >
+                Register
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               type="button"
@@ -161,20 +205,44 @@ export default function Navbar() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 hover:bg-slate-50 text-center"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 text-center shadow-md shadow-blue-600/20"
-              >
-                Register
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 text-center shadow-md shadow-blue-600/20"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMobileMenuOpen(false);
+                      await handleSignOut();
+                    }}
+                    className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-rose-200 text-sm font-semibold text-rose-600 hover:bg-rose-50 text-center cursor-pointer"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center py-2.5 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 hover:bg-slate-50 text-center"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 text-center shadow-md shadow-blue-600/20"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

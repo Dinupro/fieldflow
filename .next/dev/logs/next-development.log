@@ -1,45 +1,7 @@
-{"timestamp":"00:00:32.915","source":"Server","level":"WARN","message":"⚠ Slow filesystem detected. The benchmark took 257ms. If \\\\?\\C:\\Users\\Dineth PC\\.antigravity-ide\\fieldflow\\.next\\dev is a network drive, consider moving it to a local folder.\nSee more: https://nextjs.org/docs/app/guides/local-development"}
-{"timestamp":"00:00:52.054","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:01:09.740","source":"Server","level":"LOG","message":"○ Compiling / ..."}
-{"timestamp":"00:01:35.315","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"00:02:18.868","source":"Browser","level":"WARN","message":"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\"smooth\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior"}
-{"timestamp":"00:02:19.232","source":"Server","level":"WARN","message":"[browser] \"\\u001b[33mDetected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\\\"smooth\\\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior\\u001b[39m\""}
-{"timestamp":"00:16:52.241","source":"Server","level":"LOG","message":"✓ Compiled in 37.1s"}
-{"timestamp":"00:17:14.194","source":"Server","level":"LOG","message":"✓ Compiled in 5.3s"}
-{"timestamp":"00:17:20.382","source":"Server","level":"LOG","message":"✓ Finished filesystem cache database compaction in 24.4s"}
-{"timestamp":"00:21:35.087","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"00:21:41.366","source":"Browser","level":"WARN","message":"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\"smooth\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior"}
-{"timestamp":"00:21:41.378","source":"Server","level":"WARN","message":"[browser] \"\\u001b[33mDetected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\\\"smooth\\\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior\\u001b[39m\""}
-{"timestamp":"00:26:52.299","source":"Server","level":"LOG","message":"✓ Compiled in 2.1s"}
-{"timestamp":"00:35:11.279","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"00:35:24.215","source":"Browser","level":"WARN","message":"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\"smooth\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior"}
-{"timestamp":"00:35:24.587","source":"Server","level":"WARN","message":"[browser] \"\\u001b[33mDetected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\\\"smooth\\\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior\\u001b[39m\""}
-{"timestamp":"00:38:37.648","source":"Server","level":"LOG","message":"✓ Compiled in 4.9s"}
-{"timestamp":"00:39:22.241","source":"Server","level":"LOG","message":"✓ Compiled in 464ms"}
-{"timestamp":"00:39:59.558","source":"Server","level":"LOG","message":"✓ Compiled in 1340ms"}
-{"timestamp":"00:40:38.432","source":"Server","level":"LOG","message":"✓ Compiled in 2.7s"}
-{"timestamp":"00:41:14.598","source":"Server","level":"LOG","message":"✓ Compiled in 903ms"}
-{"timestamp":"00:42:42.291","source":"Server","level":"LOG","message":"✓ Compiled in 1173ms"}
-{"timestamp":"00:43:32.942","source":"Server","level":"LOG","message":"✓ Compiled in 510ms"}
-{"timestamp":"00:44:19.029","source":"Server","level":"LOG","message":"✓ Compiled in 534ms"}
-{"timestamp":"00:45:05.493","source":"Server","level":"LOG","message":"✓ Compiled in 1076ms"}
-{"timestamp":"00:45:37.366","source":"Server","level":"LOG","message":"✓ Compiled in 1601ms"}
-{"timestamp":"01:00:17.421","source":"Server","level":"LOG","message":"✓ Compiled in 27.9s"}
-{"timestamp":"01:01:18.378","source":"Server","level":"LOG","message":"✓ Compiled in 699ms"}
-{"timestamp":"01:02:28.327","source":"Server","level":"LOG","message":"✓ Compiled in 1996ms"}
-{"timestamp":"01:02:53.095","source":"Server","level":"LOG","message":"✓ Compiled in 2s"}
-{"timestamp":"01:03:15.751","source":"Server","level":"LOG","message":"✓ Compiled in 717ms"}
-{"timestamp":"01:03:51.818","source":"Server","level":"LOG","message":"✓ Compiled in 1061ms"}
-{"timestamp":"01:05:31.984","source":"Server","level":"LOG","message":"✓ Compiled in 692ms"}
-{"timestamp":"01:07:34.512","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"01:07:38.903","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"01:07:55.661","source":"Server","level":"LOG","message":"○ Compiling /about ..."}
-{"timestamp":"01:08:01.072","source":"Browser","level":"WARN","message":"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\"smooth\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior"}
-{"timestamp":"01:08:01.088","source":"Server","level":"WARN","message":"[browser] \"\\u001b[33mDetected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\\\"smooth\\\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior\\u001b[39m\""}
-{"timestamp":"01:08:17.725","source":"Server","level":"LOG","message":"○ Compiling /register ..."}
-{"timestamp":"01:20:21.195","source":"Server","level":"LOG","message":"✓ Compiled in 1512ms"}
-{"timestamp":"01:20:52.871","source":"Server","level":"LOG","message":"✓ Finished filesystem cache database compaction in 24.6s"}
-{"timestamp":"01:23:49.888","source":"Server","level":"LOG","message":"✓ Compiled in 1084ms"}
-{"timestamp":"01:24:16.314","source":"Server","level":"LOG","message":"✓ Compiled in 726ms"}
-{"timestamp":"01:30:44.615","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
-{"timestamp":"01:33:04.772","source":"Server","level":"LOG","message":"✓ Compiled in 1891ms"}
+{"timestamp":"00:00:26.085","source":"Server","level":"WARN","message":"⚠ Slow filesystem detected. The benchmark took 1206ms. If \\\\?\\C:\\Users\\Dineth PC\\.antigravity-ide\\fieldflow\\.next\\dev is a network drive, consider moving it to a local folder.\nSee more: https://nextjs.org/docs/app/guides/local-development"}
+{"timestamp":"00:00:29.242","source":"Server","level":"LOG","message":"○ Compiling middleware ..."}
+{"timestamp":"00:00:44.970","source":"Server","level":"WARN","message":"⚠ The \"middleware\" file convention is deprecated. Please use \"proxy\" instead.\n\n  To migrate automatically, run:\n  npx @next/codemod@canary middleware-to-proxy .\n\n  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy"}
+{"timestamp":"00:00:57.681","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:01:19.225","source":"Server","level":"LOG","message":"○ Compiling /api/auth/[...all] ..."}
+{"timestamp":"00:01:36.585","source":"Server","level":"ERROR","message":"(node:8056) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.\nIn the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.\n\nTo prepare for this change:\n- If you want the current behavior, explicitly use 'sslmode=verify-full'\n- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'\n\nSee https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.\n(Use `node --trace-warnings ...` to show where the warning was created)"}
+{"timestamp":"00:01:42.756","source":"Server","level":"ERROR","message":"[CUSTOMERS_GET_ERROR] PrismaClientValidationError: \nInvalid `__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.count()` invocation in\nC:\\Users\\Dineth PC\\.antigravity-ide\\fieldflow\\.next\\dev\\server\\chunks\\[root-of-the-server]__0ess_80._.js:258:144\n\n  255         }\n  256     }\n  257 }),\n→ 258 __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__[\"prisma\"].customer.count({\n        select: {\n          _count: {\n            select: {\n              _all: true\n            }\n          }\n        },\n        where: {\n          workOrders: {\n            some: {\n              status: {\n                in: [\n                  \"PENDING\",\n                  \"ASSIGNED\",\n                  \"IN_PROGRESS\"\n                ]\n                ~~~~~~~~~~~~~~~\n              }\n            }\n          }\n        }\n      })\n\nInvalid value for argument `in`. Expected WorkOrderStatus."}

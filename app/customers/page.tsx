@@ -14,10 +14,10 @@ import ReportsView from "@/components/dashboard/views/ReportsView";
 import SettingsView from "@/components/dashboard/views/SettingsView";
 import { LogOut } from "lucide-react";
 
-export default function DashboardPage() {
+export default function CustomersPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const [activeTab, setActiveTab] = useState<SidebarItemKey>("dashboard");
+  const [activeTab, setActiveTab] = useState<SidebarItemKey>("customers");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,12 +36,20 @@ export default function DashboardPage() {
     router.refresh();
   };
 
+  const handleTabChange = (tab: SidebarItemKey) => {
+    if (tab === "dashboard") {
+      router.push("/dashboard");
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* 1. Collapsible & Responsive Sidebar */}
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         mobileOpen={mobileOpen}
@@ -66,10 +74,10 @@ export default function DashboardPage() {
 
         {/* Dynamic View Body */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {activeTab === "dashboard" && (
-            <DashboardView onNavigate={(tab) => setActiveTab(tab)} />
-          )}
           {activeTab === "customers" && <CustomersView />}
+          {activeTab === "dashboard" && (
+            <DashboardView onNavigate={(tab) => handleTabChange(tab)} />
+          )}
           {activeTab === "technicians" && <TechniciansView />}
           {activeTab === "work-orders" && <WorkOrdersView />}
           {activeTab === "schedule" && <ScheduleView />}

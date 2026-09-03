@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SidebarItemKey } from "@/components/dashboard/Sidebar";
 import {
   FileText,
   Users,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 
 interface DashboardViewProps {
-  onNavigate: (tab: any) => void;
+  onNavigate: (tab: SidebarItemKey) => void;
 }
 
 export default function DashboardView({ onNavigate }: DashboardViewProps) {

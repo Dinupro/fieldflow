@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -39,14 +37,68 @@ enum WorkOrderStatus {
 }
 
 model User {
-  id           String      @id @default(uuid()) @db.Uuid
-  email        String      @unique @db.VarChar(255)
-  passwordHash String
-  role         UserRole
-  createdAt    DateTime    @default(now()) @db.Timestamp
-  updatedAt    DateTime    @updatedAt @db.Timestamp
-  technician   Technician?
-  statusLogs   StatusLog[]
+  id            String      @id @default(uuid()) @db.Uuid
+  name          String?     @db.VarChar(100)
+  email         String      @unique @db.VarChar(255)
+  emailVerified Boolean     @default(false)
+  image         String?
+  passwordHash  String?
+  role          UserRole?   @default(DISPATCHER)
+  createdAt     DateTime    @default(now()) @db.Timestamp
+  updatedAt     DateTime    @updatedAt @db.Timestamp
+
+  sessions      Session[]
+  accounts      Account[]
+
+  technician    Technician?
+  statusLogs    StatusLog[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @db.Timestamp
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamp
+  updatedAt DateTime @updatedAt @db.Timestamp
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @db.Uuid
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt DateTime? @db.Timestamp
+  refreshTokenExpiresAt DateTime? @db.Timestamp
+  scope                 String?
+  password              String?
+  issuer                String?
+  createdAt             DateTime  @default(now()) @db.Timestamp
+  updatedAt             DateTime  @updatedAt @db.Timestamp
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamp
+  createdAt  DateTime @default(now()) @db.Timestamp
+  updatedAt  DateTime @updatedAt @db.Timestamp
+
+  @@map("verification")
 }
 
 model Technician {
@@ -62,13 +114,19 @@ model Technician {
 }
 
 model Customer {
-  id        String      @id @default(uuid()) @db.Uuid
-  name      String      @db.VarChar(100)
-  email     String      @unique @db.VarChar(255)
-  phone     String      @db.VarChar(20)
-  address   String
-  createdAt DateTime    @default(now()) @db.Timestamp
+  id         String      @id @default(uuid()) @db.Uuid
+  name       String      @db.VarChar(100)
+  company    String?     @db.VarChar(100)
+  email      String      @unique @db.VarChar(255)
+  phone      String      @db.VarChar(20)
+  address    String
+  city       String?     @db.VarChar(100)
+  notes      String?
+  createdAt  DateTime    @default(now()) @db.Timestamp
+  updatedAt  DateTime?   @updatedAt @db.Timestamp
   workOrders WorkOrder[]
+
+  @@map("customer")
 }
 
 model WorkOrder {

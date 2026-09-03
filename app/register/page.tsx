@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { authClient, useSession } from "@/lib/auth-client";
 import {
   Wrench,
   Mail,
@@ -22,6 +24,8 @@ import {
 } from "lucide-react";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [role, setRole] = useState<"customer" | "technician">("customer");
   const [formData, setFormData] = useState({
     fullName: "",
@@ -38,6 +42,12 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      router.push("/dashboard");
+    }
+  }, [session, isPending, router]);
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -104,18 +114,33 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
     setErrors({});
 
-    // Simulate account registration
-    setTimeout(() => {
+    try {
+      const { error } = await authClient.signUp.email({
+        email: formData.email.trim(),
+        password: formData.password,
+        name: formData.fullName.trim(),
+      });
+
+      if (error) {
+        setErrors({ general: error.message || "Registration failed. Please check your information." });
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(false);
       setRegisterSuccess(true);
-    }, 1200);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setErrors({ general: message });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -137,7 +162,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Main Container */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-12 flex-grow flex items-center justify-center relative z-10">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-12 grow flex items-center justify-center relative z-10">
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-0 w-full max-w-5xl rounded-3xl bg-white border border-slate-200/90 shadow-2xl overflow-hidden">
           {/* Left Column: Brand & Security Showcase */}
           <div className="lg:col-span-5 bg-linear-to-br from-slate-900 via-slate-900 to-blue-950 text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
@@ -250,18 +275,16 @@ export default function RegisterPage() {
                       setRole("customer");
                       setErrors({});
                     }}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
-                      role === "customer"
+                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${role === "customer"
                         ? "border-blue-600 bg-blue-50/40 shadow-xs"
                         : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                        role === "customer"
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${role === "customer"
                           ? "bg-blue-600 text-white"
                           : "bg-slate-100 text-slate-500"
-                      }`}
+                        }`}
                     >
                       <Building2 className="w-5 h-5" />
                     </div>
@@ -272,7 +295,7 @@ export default function RegisterPage() {
                         </span>
                         {role === "customer" && (
                           <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <Check className="w-2.5 h-2.5 stroke-3" />
                           </span>
                         )}
                       </div>
@@ -288,18 +311,16 @@ export default function RegisterPage() {
                       setRole("technician");
                       setErrors({});
                     }}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${
-                      role === "technician"
+                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${role === "technician"
                         ? "border-blue-600 bg-blue-50/40 shadow-xs"
                         : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                        role === "technician"
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${role === "technician"
                           ? "bg-blue-600 text-white"
                           : "bg-slate-100 text-slate-500"
-                      }`}
+                        }`}
                     >
                       <Wrench className="w-5 h-5" />
                     </div>
@@ -310,7 +331,7 @@ export default function RegisterPage() {
                         </span>
                         {role === "technician" && (
                           <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <Check className="w-2.5 h-2.5 stroke-3" />
                           </span>
                         )}
                       </div>
@@ -346,6 +367,14 @@ export default function RegisterPage() {
                 </div>
               ) : (
                 <form onSubmit={handleRegister} className="space-y-4" noValidate>
+                  {/* General error message banner if applicable */}
+                  {errors.general && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{errors.general}</span>
+                    </div>
+                  )}
+
                   {/* Row 1: Full Name & Email */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Full Name */}
@@ -355,9 +384,8 @@ export default function RegisterPage() {
                       </label>
                       <div className="relative">
                         <User
-                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                            errors.fullName ? "text-rose-500" : "text-slate-400"
-                          }`}
+                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.fullName ? "text-rose-500" : "text-slate-400"
+                            }`}
                         />
                         <input
                           type="text"
@@ -367,11 +395,10 @@ export default function RegisterPage() {
                             clearError("fullName");
                           }}
                           placeholder={role === "customer" ? "Marcus Vance" : "Devon Miller"}
-                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.fullName
+                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.fullName
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                       </div>
                       {errors.fullName && (
@@ -389,9 +416,8 @@ export default function RegisterPage() {
                       </label>
                       <div className="relative">
                         <Mail
-                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                            errors.email ? "text-rose-500" : "text-slate-400"
-                          }`}
+                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.email ? "text-rose-500" : "text-slate-400"
+                            }`}
                         />
                         <input
                           type="email"
@@ -405,11 +431,10 @@ export default function RegisterPage() {
                               ? "dispatcher@company.com"
                               : "technician@email.com"
                           }
-                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.email
+                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.email
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                       </div>
                       {errors.email && (
@@ -430,9 +455,8 @@ export default function RegisterPage() {
                       </label>
                       <div className="relative">
                         <Phone
-                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                            errors.phone ? "text-rose-500" : "text-slate-400"
-                          }`}
+                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.phone ? "text-rose-500" : "text-slate-400"
+                            }`}
                         />
                         <input
                           type="tel"
@@ -442,11 +466,10 @@ export default function RegisterPage() {
                             clearError("phone");
                           }}
                           placeholder="+1 (555) 234-5678"
-                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.phone
+                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.phone
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                       </div>
                       {errors.phone && (
@@ -465,15 +488,13 @@ export default function RegisterPage() {
                       <div className="relative">
                         {role === "customer" ? (
                           <Building2
-                            className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                              errors.companyOrTrade ? "text-rose-500" : "text-slate-400"
-                            }`}
+                            className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.companyOrTrade ? "text-rose-500" : "text-slate-400"
+                              }`}
                           />
                         ) : (
                           <Briefcase
-                            className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                              errors.companyOrTrade ? "text-rose-500" : "text-slate-400"
-                            }`}
+                            className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.companyOrTrade ? "text-rose-500" : "text-slate-400"
+                              }`}
                           />
                         )}
                         <input
@@ -488,11 +509,10 @@ export default function RegisterPage() {
                               ? "Apex Logistics & Retail Hubs"
                               : "Fiber Splicing / Cat6A Cabling / CCNA"
                           }
-                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.companyOrTrade
+                          className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.companyOrTrade
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                       </div>
                       {errors.companyOrTrade && (
@@ -515,9 +535,8 @@ export default function RegisterPage() {
                       </div>
                       <div className="relative">
                         <Lock
-                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                            errors.password ? "text-rose-500" : "text-slate-400"
-                          }`}
+                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.password ? "text-rose-500" : "text-slate-400"
+                            }`}
                         />
                         <input
                           type={showPassword ? "text" : "password"}
@@ -527,11 +546,10 @@ export default function RegisterPage() {
                             clearError("password");
                           }}
                           placeholder="Min 8 characters"
-                          className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.password
+                          className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.password
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                         <button
                           type="button"
@@ -548,19 +566,16 @@ export default function RegisterPage() {
                         <div className="mt-2 space-y-1">
                           <div className="flex items-center gap-1.5">
                             <div
-                              className={`h-1 flex-1 rounded-full transition-all ${
-                                passwordStrength >= 1 ? "bg-amber-400" : "bg-slate-200"
-                              }`}
+                              className={`h-1 flex-1 rounded-full transition-all ${passwordStrength >= 1 ? "bg-amber-400" : "bg-slate-200"
+                                }`}
                             />
                             <div
-                              className={`h-1 flex-1 rounded-full transition-all ${
-                                passwordStrength >= 2 ? "bg-blue-500" : "bg-slate-200"
-                              }`}
+                              className={`h-1 flex-1 rounded-full transition-all ${passwordStrength >= 2 ? "bg-blue-500" : "bg-slate-200"
+                                }`}
                             />
                             <div
-                              className={`h-1 flex-1 rounded-full transition-all ${
-                                passwordStrength >= 3 ? "bg-emerald-500" : "bg-slate-200"
-                              }`}
+                              className={`h-1 flex-1 rounded-full transition-all ${passwordStrength >= 3 ? "bg-emerald-500" : "bg-slate-200"
+                                }`}
                             />
                           </div>
                           <div className="flex justify-between text-[10px] text-slate-500">
@@ -570,10 +585,10 @@ export default function RegisterPage() {
                                 {passwordStrength === 1
                                   ? "Weak"
                                   : passwordStrength === 2
-                                  ? "Medium"
-                                  : passwordStrength === 3
-                                  ? "Strong"
-                                  : "Too short"}
+                                    ? "Medium"
+                                    : passwordStrength === 3
+                                      ? "Strong"
+                                      : "Too short"}
                               </strong>
                             </span>
                             <span>Min 8 chars, letters & numbers</span>
@@ -598,9 +613,8 @@ export default function RegisterPage() {
                       </div>
                       <div className="relative">
                         <Lock
-                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                            errors.confirmPassword ? "text-rose-500" : "text-slate-400"
-                          }`}
+                          className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.confirmPassword ? "text-rose-500" : "text-slate-400"
+                            }`}
                         />
                         <input
                           type={showConfirmPassword ? "text" : "password"}
@@ -610,11 +624,10 @@ export default function RegisterPage() {
                             clearError("confirmPassword");
                           }}
                           placeholder="Re-enter password"
-                          className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${
-                            errors.confirmPassword
+                          className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.confirmPassword
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
-                          }`}
+                            }`}
                         />
                         <button
                           type="button"
@@ -647,13 +660,12 @@ export default function RegisterPage() {
                           setFormData({ ...formData, termsAccepted: nextState });
                           if (nextState) clearError("terms");
                         }}
-                        className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                          formData.termsAccepted
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${formData.termsAccepted
                             ? "bg-blue-600 border-blue-600 text-white"
                             : "border-slate-300 bg-white"
-                        }`}
+                          }`}
                       >
-                        {formData.termsAccepted && <Check className="w-3 h-3 stroke-[3]" />}
+                        {formData.termsAccepted && <Check className="w-3 h-3 stroke-3" />}
                       </div>
                       <span className="leading-normal">
                         I agree to the{" "}

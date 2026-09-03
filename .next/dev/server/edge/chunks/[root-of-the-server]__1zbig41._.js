@@ -17,26 +17,38 @@ module.exports = mod;
 __turbopack_context__.s([
     "config",
     ()=>config,
-    "default",
-    ()=>__TURBOPACK__default__export__
+    "middleware",
+    ()=>middleware
 ]);
-(()=>{
-    const e = new Error("Cannot find module 'next-auth/middleware'");
-    e.code = 'MODULE_NOT_FOUND';
-    throw e;
-})();
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$api$2f$server$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/next/dist/esm/api/server.js [middleware-edge] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/esm/server/web/spec-extension/response.js [middleware-edge] (ecmascript)");
 ;
-const __TURBOPACK__default__export__ = withAuth({
-    callbacks: {
-        authorized: ({ token })=>!!token
-    },
-    pages: {
-        signIn: "/login"
+function middleware(request) {
+    const sessionToken = request.cookies.get("better-auth.session_token")?.value || request.cookies.get("__Secure-better-auth.session_token")?.value;
+    const { pathname } = request.nextUrl;
+    // Protect /dashboard and /customers and all subroutes
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/customers")) {
+        if (!sessionToken) {
+            const loginUrl = new URL("/login", request.url);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(loginUrl);
+        }
     }
-});
+    // Redirect authenticated users away from /login and /register
+    if (pathname === "/login" || pathname === "/register") {
+        if (sessionToken) {
+            const dashboardUrl = new URL("/dashboard", request.url);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(dashboardUrl);
+        }
+    }
+    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$spec$2d$extension$2f$response$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].next();
+}
 const config = {
     matcher: [
-        "/dashboard/:path*"
+        "/dashboard/:path*",
+        "/customers/:path*",
+        "/customers",
+        "/login",
+        "/register"
     ]
 };
 }),

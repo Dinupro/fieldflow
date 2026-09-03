@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "@/lib/auth-client";
 import {
   Search,
   Bell,
@@ -33,9 +34,20 @@ export default function TopNavbar({
   onLogoutClick,
   onSettingsClick,
 }: TopNavbarProps) {
+  const { data: session } = useSession();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
+
+  const userName = session?.user?.name || "Marcus Vance";
+  const userEmail = session?.user?.email || "dispatcher@fieldflow.io";
+  const initials =
+    userName
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "FF";
 
   const notifications = [
     {
@@ -210,17 +222,17 @@ export default function TopNavbar({
           >
             <div className="relative">
               <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                MV
+                {initials}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
             </div>
 
             <div className="hidden sm:flex flex-col text-left">
               <span className="text-xs font-bold text-slate-900 leading-tight">
-                Marcus Vance
+                {userName}
               </span>
               <span className="text-[10px] font-semibold text-slate-500">
-                Lead Dispatcher
+                Active Session
               </span>
             </div>
 
@@ -231,10 +243,10 @@ export default function TopNavbar({
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-slate-200 shadow-2xl p-2 space-y-1 z-50 animate-fadeIn text-xs">
               <div className="p-2 border-b border-slate-100 mb-1">
-                <span className="font-bold text-slate-900 block">Marcus Vance</span>
-                <span className="text-slate-500 text-[11px]">dispatcher@fieldflow.io</span>
+                <span className="font-bold text-slate-900 block">{userName}</span>
+                <span className="text-slate-500 text-[11px] truncate block">{userEmail}</span>
                 <span className="mt-1 inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-100 text-blue-800">
-                  Dispatcher Portal
+                  FieldFlow Portal
                 </span>
               </div>
 
