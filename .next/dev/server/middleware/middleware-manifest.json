@@ -32,6 +32,14 @@
           "originalSource": "/technicians"
         },
         {
+          "regexp": "/:nextData(_next/data/[^/]{1,})?/work-orders/:path*{(\\.json|\\.rsc|\\.segments/.+\\.segment\\.rsc)}?",
+          "originalSource": "/work-orders/:path*"
+        },
+        {
+          "regexp": "/:nextData(_next/data/[^/]{1,})?/work-orders{(\\.json|\\.rsc|\\.segments/.+\\.segment\\.rsc)}?",
+          "originalSource": "/work-orders"
+        },
+        {
           "regexp": "/:nextData(_next/data/[^/]{1,})?/login{(\\.json|\\.rsc|\\.segments/.+\\.segment\\.rsc)}?",
           "originalSource": "/login"
         },
@@ -45,9 +53,9 @@
       "env": {
         "__NEXT_BUILD_ID": "development",
         "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "Xe+KWu9dmLwElC7rmvu5yPR0JykNqJ6PjyfblwDKLFw=",
-        "__NEXT_PREVIEW_MODE_ID": "9009d6a9e26886ec8597b841fc2498d2",
-        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "c5826d46b8b6a13b2abcb68dfc10c8e1d4c2cc7df4f73732ec588bc60052eb94",
-        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "ee541392adee0daf074f511a45fa954ef0c9468e5c58f999c6a13023736c692c"
+        "__NEXT_PREVIEW_MODE_ID": "46178020cb549da006e9918273a6d703",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "d73c7d4288b58c37652be118db4608596e911ad8c2903de8e930d59d61f83ede",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "66626e880342c7d138a0f7556ffb16d3741dc222a80b6beaf0c11bbfe8bd01e4"
       }
     }
   },

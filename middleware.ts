@@ -7,11 +7,12 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard, /customers, and /technicians (and all subroutes)
+  // Protect /dashboard, /customers, /technicians, and /work-orders (and all subroutes)
   if (
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/customers") ||
-    pathname.startsWith("/technicians")
+    pathname.startsWith("/technicians") ||
+    pathname.startsWith("/work-orders")
   ) {
     if (!sessionToken) {
       const loginUrl = new URL("/login", request.url);
@@ -37,6 +38,8 @@ export const config = {
     "/customers",
     "/technicians/:path*",
     "/technicians",
+    "/work-orders/:path*",
+    "/work-orders",
     "/login",
     "/register",
   ],
