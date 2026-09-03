@@ -17,7 +17,7 @@
   A state-of-the-art SaaS web application engineered for field service operations, technician scheduling, real-time dispatch intelligence, customer management, and automated SLA tracking.
 </p>
 
-[Features](#-features) • [User Manual](USER_MANUAL.md) • [API Docs](API_DOCUMENTATION.md) • [Architecture](ARCHITECTURE.md) • [Testing](TESTING_REPORT.md) • [Deployment](DEPLOYMENT.md) • [Presentation](PRESENTATION.md) • [Quick Start](#-installation--setup)
+[Features](#-features) • [Architecture](ARCHITECTURE.md) • [API Docs](API_DOCUMENTATION.md) • [User Manual](USER_MANUAL.md) • [Code Review](CODE_REVIEW.md) • [Testing](TESTING_REPORT.md) • [Verification](FINAL_VERIFICATION_REPORT.md) • [Optimizations](OPTIMIZATION_REPORT.md) • [Deployment](DEPLOYMENT.md) • [Presentation](PRESENTATION.md)
 
 </div>
 

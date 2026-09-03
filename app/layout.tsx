@@ -1,18 +1,54 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
-  title: "FieldFlow - Modern Field Service Management & Technician Dispatch Platform",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://fieldflow.vercel.app"),
+  title: {
+    default: "FieldFlow | Enterprise Field Service Management & Technician Dispatch Platform",
+    template: "%s | FieldFlow",
+  },
   description:
-    "Deploy certified, background-checked field service technicians on demand. Streamline dispatching, real-time GPS tracking, automated billing, and work order management.",
+    "Deploy certified field service technicians on demand. Streamline dispatching, real-time SLA tracking, automated billing, customer management, and work order scheduling.",
   keywords: [
     "Field Service Management",
+    "Workforce Dispatch",
     "Field Technicians",
-    "On-Demand Technicians",
-    "Work Order Dispatch",
+    "SLA Tracking",
+    "Work Order Management",
     "SaaS FSM",
-    "Field Service Automation",
+    "Next.js SaaS",
+    "Prisma ORM",
+    "Neon PostgreSQL",
   ],
+  authors: [{ name: "FieldFlow Engineering" }],
+  creator: "FieldFlow Platform",
+  publisher: "FieldFlow Inc.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://fieldflow.vercel.app",
+    siteName: "FieldFlow",
+    title: "FieldFlow | Enterprise Field Service Management & Dispatch Platform",
+    description:
+      "Modern field service dispatch platform with real-time workforce capacity, automated SLA tracking, and audit-ready StatusLog timelines.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FieldFlow | Enterprise Field Service Management",
+    description:
+      "Deploy certified field service technicians on demand with sub-second dispatching and real-time SLA monitoring.",
+  },
 };
 
 export default function RootLayout({

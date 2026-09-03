@@ -1,18 +1,86 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import Sidebar, { SidebarItemKey } from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
 import DashboardView from "@/components/dashboard/views/DashboardView";
-import CustomersView from "@/components/dashboard/views/CustomersView";
-import TechniciansView from "@/components/dashboard/views/TechniciansView";
-import WorkOrdersView from "@/components/dashboard/views/WorkOrdersView";
-import ScheduleView from "@/components/dashboard/views/ScheduleView";
-import ReportsView from "@/components/dashboard/views/ReportsView";
-import SettingsView from "@/components/dashboard/views/SettingsView";
 import { LogOut } from "lucide-react";
+
+// Code Splitting: Dynamically load secondary views to minimize initial bundle size
+const CustomersView = dynamic(
+  () => import("@/components/dashboard/views/CustomersView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
+const TechniciansView = dynamic(
+  () => import("@/components/dashboard/views/TechniciansView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
+const WorkOrdersView = dynamic(
+  () => import("@/components/dashboard/views/WorkOrdersView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
+const ScheduleView = dynamic(
+  () => import("@/components/dashboard/views/ScheduleView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
+const ReportsView = dynamic(
+  () => import("@/components/dashboard/views/ReportsView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
+const SettingsView = dynamic(
+  () => import("@/components/dashboard/views/SettingsView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
 
 export default function DashboardPage() {
   const router = useRouter();
