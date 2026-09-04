@@ -5,7 +5,6 @@ import {
   Zap,
   Globe,
   Cpu,
-  Layers,
   CheckCircle2,
   Award,
   BookOpen,

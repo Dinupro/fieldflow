@@ -2,13 +2,9 @@
 
 import { useState } from "react";
 import {
-  Settings as SettingsIcon,
-  ShieldCheck,
   Bell,
   CheckCircle2,
-  Lock,
   Radio,
-  Sliders,
 } from "lucide-react";
 
 export default function SettingsView() {

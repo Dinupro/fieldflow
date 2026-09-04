@@ -10,12 +10,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Radio,
   User,
   Settings,
   LogOut,
-  Sparkles,
-  ShieldCheck,
   ChevronDown,
 } from "lucide-react";
 

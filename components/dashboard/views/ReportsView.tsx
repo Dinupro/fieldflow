@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import {
-  BarChart3,
-  TrendingUp,
-  Clock,
   CheckCircle2,
-  DollarSign,
   Download,
-  Calendar,
   Sparkles,
 } from "lucide-react";
 

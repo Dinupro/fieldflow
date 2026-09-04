@@ -8,13 +8,10 @@ import {
   ChevronRight,
   MapPin,
   User,
-  Plus,
-  Filter,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function ScheduleView() {
-  const [selectedDay, setSelectedDay] = useState("Today, Sep 1");
+  const [selectedDay] = useState("Today, Sep 1");
 
   const scheduleSlots = [
     {

@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Sparkles,
   ShieldCheck,
-  Building2,
 } from "lucide-react";
 
 export default function ContactPage() {

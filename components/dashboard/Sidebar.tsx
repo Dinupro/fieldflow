@@ -12,9 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   Radio,
-  Sparkles,
 } from "lucide-react";
 
 export type SidebarItemKey =

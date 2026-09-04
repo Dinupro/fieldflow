@@ -6,13 +6,11 @@ import {
   MapPin,
   FileCheck2,
   Receipt,
-  ShieldCheck,
   Smartphone,
   BarChart3,
   Layers,
   ArrowRight,
   CheckCircle2,
-  Clock,
   Zap,
   Lock,
 } from "lucide-react";

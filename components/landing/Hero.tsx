@@ -10,12 +10,9 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
-  Sparkles,
   Zap,
-  Users,
   Award,
   Radio,
-  Phone,
   Layers,
 } from "lucide-react";
 

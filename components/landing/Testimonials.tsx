@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Quote, ShieldCheck, CheckCircle2, Building2 } from "lucide-react";
+import { Star, ShieldCheck, CheckCircle2, Building2 } from "lucide-react";
 
 export default function Testimonials() {
   const reviews = [

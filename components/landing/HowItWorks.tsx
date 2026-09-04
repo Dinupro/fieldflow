@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ArrowRight,
   Briefcase,
-  Wrench,
   DollarSign,
   Smartphone,
   ShieldCheck,

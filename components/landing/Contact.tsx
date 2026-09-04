@@ -5,12 +5,10 @@ import {
   Mail,
   Phone,
   MapPin,
-  Clock,
   Send,
   CheckCircle2,
   ShieldCheck,
   Headphones,
-  Sparkles,
 } from "lucide-react";
 
 export default function Contact() {

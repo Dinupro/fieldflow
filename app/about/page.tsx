@@ -5,16 +5,11 @@ import Statistics from "@/components/landing/Statistics";
 import Testimonials from "@/components/landing/Testimonials";
 import Link from "next/link";
 import {
-  Wrench,
   ShieldCheck,
   Zap,
-  Users,
-  Award,
   Sparkles,
-  CheckCircle2,
   Lock,
   Server,
-  Globe,
   ArrowRight,
   BookOpen,
 } from "lucide-react";
