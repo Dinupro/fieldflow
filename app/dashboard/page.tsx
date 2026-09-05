@@ -166,10 +166,10 @@ export default function DashboardPage() {
         {/* Dynamic View Body */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {activeTab === "dashboard" && (
-            <DashboardView onNavigate={(tab) => setActiveTab(tab)} />
+            <DashboardView onNavigate={(tab) => setActiveTab(tab)} role={userRole} />
           )}
-          {activeTab === "customers" && <CustomersView />}
-          {activeTab === "technicians" && <TechniciansView />}
+          {activeTab === "customers" && <CustomersView role={userRole} />}
+          {activeTab === "technicians" && <TechniciansView role={userRole} />}
           {activeTab === "work-orders" && <WorkOrdersView role={userRole} />}
           {activeTab === "schedule" && <ScheduleView />}
           {activeTab === "users" && <UsersView />}

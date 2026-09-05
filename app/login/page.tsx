@@ -62,18 +62,15 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
+  const handleDirectLogin = async (loginEmail: string, loginPass: string) => {
     setIsLoading(true);
     setErrors({});
 
     try {
       const { error } = await authClient.signIn.email({
-        email: email.trim(),
-        password: password,
-        rememberMe: rememberMe,
+        email: loginEmail.trim(),
+        password: loginPass,
+        rememberMe: true,
         callbackURL: "/dashboard",
       });
 
@@ -92,6 +89,12 @@ export default function LoginPage() {
       setErrors({ general: message });
       setIsLoading(false);
     }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    await handleDirectLogin(email, password);
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -222,30 +225,70 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Role Switcher Tabs */}
-              <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6 border border-slate-200/80">
-                <button
-                  type="button"
-                  onClick={() => setRole("client")}
-                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${role === "client"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                    }`}
-                >
-                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Enterprise / Dispatcher</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("technician")}
-                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${role === "technician"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                    }`}
-                >
-                  <Wrench className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Field Technician</span>
-                </button>
+              {/* Quick Demo Credentials Panel */}
+              <div className="mb-6 p-3.5 rounded-2xl bg-linear-to-br from-slate-50 to-blue-50/60 border border-blue-100/80 shadow-2xs">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Instant Demo Sign-In (Select Role)</span>
+                  </span>
+                  <span className="text-[10px] font-medium text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                    Password: <code className="font-bold text-slate-700">password123</code>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail("admin@fieldflow.test");
+                      setPassword("password123");
+                      setRole("client");
+                      handleDirectLogin("admin@fieldflow.test", "password123");
+                    }}
+                    className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-purple-50 hover:border-purple-300 border border-slate-200 shadow-2xs transition-all text-center group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900">Admin</span>
+                    <span className="text-[9px] text-slate-500 leading-tight">Full RBAC</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail("dispatch@fieldflow.test");
+                      setPassword("password123");
+                      setRole("client");
+                      handleDirectLogin("dispatch@fieldflow.test", "password123");
+                    }}
+                    className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-blue-50 hover:border-blue-300 border border-slate-200 shadow-2xs transition-all text-center group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900">Dispatcher</span>
+                    <span className="text-[9px] text-slate-500 leading-tight">Ops & Jobs</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail("tech@fieldflow.test");
+                      setPassword("password123");
+                      setRole("technician");
+                      handleDirectLogin("tech@fieldflow.test", "password123");
+                    }}
+                    className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 shadow-2xs transition-all text-center group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900">Technician</span>
+                    <span className="text-[9px] text-slate-500 leading-tight">My Jobs Queue</span>
+                  </button>
+                </div>
               </div>
 
               {/* Login Success Notification */}
@@ -256,7 +299,7 @@ export default function LoginPage() {
                   </div>
                   <h3 className="text-lg font-bold">Authentication Successful</h3>
                   <p className="text-xs text-emerald-700">
-                    Redirecting to your <strong>{role === "client" ? "Enterprise Command Center" : "Technician Mobile Workspace"}</strong>...
+                    Redirecting to your <strong>{role === "client" ? "Operations Command Center" : "Technician Mobile Workspace"}</strong>...
                   </p>
                   <div className="pt-2">
                     <Link
@@ -278,68 +321,11 @@ export default function LoginPage() {
                     </div>
                   )}
 
-                  {/* Social Login Placeholders */}
-                  <div className="space-y-2.5 mb-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLoading(true);
-                        setTimeout(() => {
-                          setIsLoading(false);
-                          setLoginSuccess(true);
-                        }, 1000);
-                      }}
-                      className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-300/90 bg-white hover:bg-slate-50 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs hover:border-slate-400 transition-all cursor-pointer"
-                    >
-                      {/* Google G SVG */}
-                      <svg className="w-4 h-4" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        />
-                        <path
-                          fill="#34A853"
-                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        />
-                        <path
-                          fill="#FBBC05"
-                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                        />
-                        <path
-                          fill="#EA4335"
-                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                        />
-                      </svg>
-                      <span>Continue with Google Workspace</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLoading(true);
-                        setTimeout(() => {
-                          setIsLoading(false);
-                          setLoginSuccess(true);
-                        }, 1000);
-                      }}
-                      className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-300/90 bg-white hover:bg-slate-50 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs hover:border-slate-400 transition-all cursor-pointer"
-                    >
-                      {/* Microsoft 4-square SVG */}
-                      <svg className="w-4 h-4" viewBox="0 0 23 23">
-                        <path fill="#f35325" d="M1 1h10v10H1z" />
-                        <path fill="#81bc06" d="M12 1h10v10H12z" />
-                        <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                        <path fill="#ffba08" d="M12 12h10v10H12z" />
-                      </svg>
-                      <span>Continue with Microsoft 365 / Azure AD</span>
-                    </button>
-                  </div>
-
                   {/* Divider */}
-                  <div className="relative flex items-center justify-center mb-6">
+                  <div className="relative flex items-center justify-center mb-5">
                     <div className="border-t border-slate-200 w-full" />
                     <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 relative">
-                      or log in with email
+                      or sign in with credentials
                     </span>
                   </div>
 

@@ -17,6 +17,7 @@ import { LogOut } from "lucide-react";
 export default function TechniciansPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const [userRole, setUserRole] = useState<"ADMIN" | "DISPATCHER" | "TECHNICIAN">("DISPATCHER");
   const [activeTab, setActiveTab] = useState<SidebarItemKey>("technicians");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -28,6 +29,23 @@ export default function TechniciansPage() {
       router.push("/login");
     }
   }, [session, isPending, router]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch("/api/auth/me")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.role) {
+            setUserRole(data.role);
+            if (data.role === "TECHNICIAN") {
+              // Technicians cannot view technician management
+              router.push("/dashboard");
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session, router]);
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
@@ -57,6 +75,7 @@ export default function TechniciansPage() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogoutClick={() => setShowLogoutModal(true)}
+        role={userRole}
       />
 
       {/* 2. Main Content Area */}
@@ -72,6 +91,8 @@ export default function TechniciansPage() {
           setSearchQuery={setSearchQuery}
           onLogoutClick={() => setShowLogoutModal(true)}
           onSettingsClick={() => setActiveTab("settings")}
+          activeTab={activeTab}
+          role={userRole}
         />
 
         {/* Dynamic View Body */}
@@ -81,7 +102,7 @@ export default function TechniciansPage() {
             <DashboardView onNavigate={(tab) => handleTabChange(tab)} />
           )}
           {activeTab === "customers" && <CustomersView />}
-          {activeTab === "work-orders" && <WorkOrdersView />}
+          {activeTab === "work-orders" && <WorkOrdersView role={userRole} />}
           {activeTab === "schedule" && <ScheduleView />}
           {activeTab === "reports" && <ReportsView />}
           {activeTab === "settings" && <SettingsView />}

@@ -21,6 +21,7 @@ import {
 
 interface DashboardViewProps {
   onNavigate: (tab: SidebarItemKey) => void;
+  role?: "ADMIN" | "DISPATCHER" | "TECHNICIAN";
 }
 
 interface DashboardMetrics {
@@ -87,7 +88,7 @@ interface AlertItem {
   actionText: string;
 }
 
-export default function DashboardView({ onNavigate }: DashboardViewProps) {
+export default function DashboardView({ onNavigate, role = "DISPATCHER" }: DashboardViewProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalCustomers: 0,
     totalTechnicians: 0,

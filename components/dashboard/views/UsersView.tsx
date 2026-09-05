@@ -175,11 +175,10 @@ export default function UsersView() {
       {toast && (
         <div className="fixed top-20 right-6 z-50 max-w-md w-full animate-fadeIn shadow-2xl">
           <div
-            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${
-              toast.type === "success"
+            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${toast.type === "success"
                 ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
                 : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
-            }`}
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -299,41 +298,37 @@ export default function UsersView() {
         <div className="flex items-center p-1 rounded-xl bg-slate-100 text-xs font-bold overflow-x-auto">
           <button
             onClick={() => setRoleFilter("ALL")}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              roleFilter === "ALL"
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${roleFilter === "ALL"
                 ? "bg-white text-slate-900 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             All Roles ({users.length})
           </button>
           <button
             onClick={() => setRoleFilter("ADMIN")}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              roleFilter === "ADMIN"
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${roleFilter === "ADMIN"
                 ? "bg-white text-purple-700 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             Admins ({adminCount})
           </button>
           <button
             onClick={() => setRoleFilter("DISPATCHER")}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              roleFilter === "DISPATCHER"
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${roleFilter === "DISPATCHER"
                 ? "bg-white text-blue-700 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             Dispatchers ({dispatcherCount})
           </button>
           <button
             onClick={() => setRoleFilter("TECHNICIAN")}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              roleFilter === "TECHNICIAN"
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${roleFilter === "TECHNICIAN"
                 ? "bg-white text-emerald-700 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
           >
             Technicians ({technicianCount})
           </button>
@@ -376,7 +371,7 @@ export default function UsersView() {
                       {/* Name & Email */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                          <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-slate-700 to-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                             {initials}
                           </div>
                           <div className="min-w-0">
@@ -422,8 +417,8 @@ export default function UsersView() {
                                   user.technician.status === "AVAILABLE"
                                     ? "text-emerald-600 font-bold"
                                     : user.technician.status === "BUSY"
-                                    ? "text-amber-600 font-bold"
-                                    : "text-slate-400 font-bold"
+                                      ? "text-amber-600 font-bold"
+                                      : "text-slate-400 font-bold"
                                 }
                               >
                                 {user.technician.status}
@@ -507,11 +502,10 @@ export default function UsersView() {
                 <div className="grid grid-cols-1 gap-2.5">
                   {/* ADMIN */}
                   <label
-                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
-                      selectedRole === "ADMIN"
+                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${selectedRole === "ADMIN"
                         ? "bg-purple-50/60 border-purple-300 ring-2 ring-purple-500/20"
                         : "bg-white border-slate-200 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -534,11 +528,10 @@ export default function UsersView() {
 
                   {/* DISPATCHER */}
                   <label
-                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
-                      selectedRole === "DISPATCHER"
+                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${selectedRole === "DISPATCHER"
                         ? "bg-blue-50/60 border-blue-300 ring-2 ring-blue-500/20"
                         : "bg-white border-slate-200 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -561,11 +554,10 @@ export default function UsersView() {
 
                   {/* TECHNICIAN */}
                   <label
-                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
-                      selectedRole === "TECHNICIAN"
+                    className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${selectedRole === "TECHNICIAN"
                         ? "bg-emerald-50/60 border-emerald-300 ring-2 ring-emerald-500/20"
                         : "bg-white border-slate-200 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"

@@ -17,6 +17,7 @@ import { LogOut } from "lucide-react";
 export default function WorkOrdersPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const [userRole, setUserRole] = useState<"ADMIN" | "DISPATCHER" | "TECHNICIAN">("DISPATCHER");
   const [activeTab, setActiveTab] = useState<SidebarItemKey>("work-orders");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -28,6 +29,19 @@ export default function WorkOrdersPage() {
       router.push("/login");
     }
   }, [session, isPending, router]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch("/api/auth/me")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.role) {
+            setUserRole(data.role);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session]);
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
@@ -59,6 +73,7 @@ export default function WorkOrdersPage() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogoutClick={() => setShowLogoutModal(true)}
+        role={userRole}
       />
 
       {/* 2. Main Content Area */}
@@ -74,11 +89,13 @@ export default function WorkOrdersPage() {
           setSearchQuery={setSearchQuery}
           onLogoutClick={() => setShowLogoutModal(true)}
           onSettingsClick={() => setActiveTab("settings")}
+          activeTab={activeTab}
+          role={userRole}
         />
 
         {/* Dynamic View Body */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {activeTab === "work-orders" && <WorkOrdersView />}
+          {activeTab === "work-orders" && <WorkOrdersView role={userRole} />}
           {activeTab === "dashboard" && (
             <DashboardView onNavigate={(tab) => handleTabChange(tab)} />
           )}

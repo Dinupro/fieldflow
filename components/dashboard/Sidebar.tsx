@@ -69,7 +69,7 @@ export default function Sidebar({
           { key: "dashboard", label: "My Overview", icon: LayoutDashboard },
           {
             key: "work-orders",
-            label: "My Work Orders",
+            label: "My Jobs",
             icon: FileText,
             badge: "Assigned",
             badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/30",

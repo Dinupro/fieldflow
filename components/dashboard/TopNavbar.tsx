@@ -226,21 +226,19 @@ export default function TopNavbar({
                   return (
                     <div
                       key={notif.id}
-                      className={`p-3 rounded-xl border transition-all ${
-                        notif.unread
-                          ? "bg-blue-50/40 border-blue-100"
-                          : "bg-slate-50/50 border-slate-100"
-                      }`}
+                      className={`p-3 rounded-xl border transition-all ${notif.unread
+                        ? "bg-blue-50/40 border-blue-100"
+                        : "bg-slate-50/50 border-slate-100"
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
-                            notif.type === "success"
-                              ? "bg-emerald-100 text-emerald-600"
-                              : notif.type === "warning"
+                          className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${notif.type === "success"
+                            ? "bg-emerald-100 text-emerald-600"
+                            : notif.type === "warning"
                               ? "bg-amber-100 text-amber-600"
                               : "bg-blue-100 text-blue-600"
-                          }`}
+                            }`}
                         >
                           <Icon className="w-3.5 h-3.5" />
                         </div>
@@ -275,7 +273,7 @@ export default function TopNavbar({
             className="flex items-center gap-2.5 p-1.5 pl-2 rounded-xl hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer group"
           >
             <div
-              className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${roleBadgeInfo.gradient} text-white flex items-center justify-center font-bold text-xs shadow-xs`}
+              className={`w-8 h-8 rounded-lg bg-linear-to-tr ${roleBadgeInfo.gradient} text-white flex items-center justify-center font-bold text-xs shadow-xs`}
             >
               {initials}
             </div>

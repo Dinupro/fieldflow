@@ -2088,19 +2088,52 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowViewModal(false);
-                  handleOpenEdit(selectedWorkOrder);
-                }}
-                className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                <span>Edit Work Order</span>
-              </button>
+              {role !== "TECHNICIAN" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleOpenEdit(selectedWorkOrder);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span>Edit Work Order</span>
+                </button>
+              )}
+
+              {role === "TECHNICIAN" && (selectedWorkOrder.status === "OPEN" || selectedWorkOrder.status === "ASSIGNED") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleQuickStartWork(selectedWorkOrder);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  <span>Start Work</span>
+                </button>
+              )}
+
+              {role === "TECHNICIAN" && selectedWorkOrder.status === "IN_PROGRESS" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleOpenCompleteModal(selectedWorkOrder);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Complete Job</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => {

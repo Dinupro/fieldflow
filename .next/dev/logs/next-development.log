@@ -9,3 +9,23 @@
 {"timestamp":"00:09:31.623","source":"Server","level":"ERROR","message":"(node:6640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.\nIn the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.\n\nTo prepare for this change:\n- If you want the current behavior, explicitly use 'sslmode=verify-full'\n- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'\n\nSee https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.\n(Use `node --trace-warnings ...` to show where the warning was created)"}
 {"timestamp":"00:09:37.691","source":"Server","level":"LOG","message":"○ Compiling /api/users ..."}
 {"timestamp":"00:10:07.125","source":"Server","level":"ERROR","message":"(node:6640) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead."}
+{"timestamp":"03:00:30.184","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"03:02:04.407","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
+{"timestamp":"03:02:09.546","source":"Server","level":"LOG","message":"○ Compiling /api/auth/[...all] ..."}
+{"timestamp":"03:02:26.289","source":"Server","level":"LOG","message":"✓ Finished filesystem cache database compaction in 52s"}
+{"timestamp":"03:16:33.050","source":"Browser","level":"WARN","message":"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\"smooth\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior"}
+{"timestamp":"03:16:33.834","source":"Server","level":"WARN","message":"[browser] \"Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior=\\\"smooth\\\"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior\""}
+{"timestamp":"03:18:45.908","source":"Server","level":"LOG","message":"○ Compiling /dashboard ..."}
+{"timestamp":"03:18:48.283","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
+{"timestamp":"07:06:15.556","source":"Server","level":"LOG","message":"✓ Compiled in 63.5s"}
+{"timestamp":"07:07:46.067","source":"Server","level":"LOG","message":"✓ Compiled in 1318ms"}
+{"timestamp":"07:23:05.577","source":"Server","level":"LOG","message":"✓ Compiled in 1622ms"}
+{"timestamp":"07:32:23.105","source":"Server","level":"LOG","message":"✓ Compiled in 936ms"}
+{"timestamp":"07:33:11.332","source":"Server","level":"LOG","message":"✓ Compiled in 375ms"}
+{"timestamp":"07:34:29.895","source":"Server","level":"LOG","message":"✓ Compiled in 2s"}
+{"timestamp":"07:39:13.319","source":"Server","level":"LOG","message":"✓ Compiled in 890ms"}
+{"timestamp":"07:40:28.147","source":"Server","level":"LOG","message":"✓ Compiled in 541ms"}
+{"timestamp":"07:41:32.075","source":"Server","level":"LOG","message":"✓ Compiled in 726ms"}
+{"timestamp":"07:49:19.767","source":"Server","level":"LOG","message":"✓ Compiled in 403ms"}
+{"timestamp":"07:50:41.839","source":"Server","level":"LOG","message":"✓ Compiled in 1508ms"}
+{"timestamp":"07:52:15.358","source":"Server","level":"LOG","message":"✓ Compiled in 527ms"}
