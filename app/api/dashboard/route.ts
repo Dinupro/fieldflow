@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -89,12 +88,10 @@ interface TopTechRecord {
   };
 }
 
-export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export async function GET(req: NextRequest) {
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -104,6 +101,10 @@ export async function GET() {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const isTechnician = authContext.isTechnician;
+    const techId = authContext.technician?.id || "00000000-0000-0000-0000-000000000000";
+    const baseOrderWhere = isTechnician ? { technicianId: techId } : {};
 
     // 1. Parallel Aggregated Queries with Prisma GroupBy & Counts
     const [
@@ -121,30 +122,43 @@ export async function GET() {
       recentWorkOrders,
       trendOrders,
     ] = await Promise.all([
-      // Total Customers
-      prisma.customer.count(),
+      // Total Customers (if technician, count of customers with jobs assigned to this technician)
+      isTechnician
+        ? prisma.customer.count({
+            where: {
+              workOrders: {
+                some: { technicianId: techId },
+              },
+            },
+          })
+        : prisma.customer.count(),
 
-      // Technicians grouped by availability status
-      prisma.technician.groupBy({
-        by: ["status"],
-        _count: { _all: true },
-      }),
+      // Technicians grouped by availability status (skipped if tech)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.technician.groupBy({
+            by: ["status"],
+            _count: { _all: true },
+          }),
 
-      // Work Orders grouped by status
+      // Work Orders grouped by status (scoped if tech)
       prisma.workOrder.groupBy({
         by: ["status"],
+        where: baseOrderWhere,
         _count: { _all: true },
       }),
 
-      // Work Orders grouped by priority
+      // Work Orders grouped by priority (scoped if tech)
       prisma.workOrder.groupBy({
         by: ["priority"],
+        where: baseOrderWhere,
         _count: { _all: true },
       }),
 
-      // Overdue Work Orders
+      // Overdue Work Orders (scoped if tech)
       prisma.workOrder.findMany({
         where: {
+          ...baseOrderWhere,
           scheduledAt: { lt: now },
           status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] },
         },
@@ -161,59 +175,72 @@ export async function GET() {
         take: 5,
       }),
 
-      // Unassigned Work Orders
-      prisma.workOrder.findMany({
-        where: {
-          technicianId: null,
-          status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] },
-        },
-        select: {
-          id: true,
-          title: true,
-          priority: true,
-          status: true,
-          createdAt: true,
-          customer: { select: { name: true, company: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-
-      // Offline Technicians
-      prisma.technician.findMany({
-        where: { status: "OFF" },
-        select: {
-          id: true,
-          name: true,
-          specialization: true,
-          serviceArea: true,
-        },
-        take: 5,
-      }),
-
-      // Technician Workload (Top 6 techs by active work orders)
-      prisma.technician.findMany({
-        take: 6,
-        select: {
-          id: true,
-          name: true,
-          specialization: true,
-          status: true,
-          _count: {
+      // Unassigned Work Orders (only for dispatcher/admin)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.workOrder.findMany({
+            where: {
+              technicianId: null,
+              status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] },
+            },
             select: {
-              workOrders: {
-                where: { status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] } },
+              id: true,
+              title: true,
+              priority: true,
+              status: true,
+              createdAt: true,
+              customer: { select: { name: true, company: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          }),
+
+      // Offline Technicians (only for dispatcher/admin)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.technician.findMany({
+            where: { status: "OFF" },
+            select: {
+              id: true,
+              name: true,
+              specialization: true,
+              serviceArea: true,
+            },
+            take: 5,
+          }),
+
+      // Technician Workload (Top 6 techs by active work orders - dispatcher/admin)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.technician.findMany({
+            take: 6,
+            select: {
+              id: true,
+              name: true,
+              specialization: true,
+              status: true,
+              _count: {
+                select: {
+                  workOrders: {
+                    where: { status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] } },
+                  },
+                },
               },
             },
-          },
-        },
-        orderBy: {
-          workOrders: { _count: "desc" },
-        },
-      }),
+            orderBy: {
+              workOrders: { _count: "desc" },
+            },
+          }),
 
-      // Recent StatusLog entries for activity stream
+      // Recent StatusLog entries for activity stream (scoped if tech)
       prisma.statusLog.findMany({
+        where: isTechnician
+          ? {
+              workOrder: {
+                technicianId: techId,
+              },
+            }
+          : {},
         take: 10,
         orderBy: { changedAt: "desc" },
         include: {
@@ -222,34 +249,39 @@ export async function GET() {
         },
       }),
 
-      // Recent Customer additions
-      prisma.customer.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          company: true,
-          city: true,
-          createdAt: true,
-        },
-      }),
+      // Recent Customer additions (only for dispatcher/admin)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.customer.findMany({
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              name: true,
+              company: true,
+              city: true,
+              createdAt: true,
+            },
+          }),
 
-      // Recent Technician additions
-      prisma.technician.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          specialization: true,
-          status: true,
-          createdAt: true,
-        },
-      }),
+      // Recent Technician additions (only for dispatcher/admin)
+      isTechnician
+        ? Promise.resolve([])
+        : prisma.technician.findMany({
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              name: true,
+              specialization: true,
+              status: true,
+              createdAt: true,
+            },
+          }),
 
-      // Recent Work Orders created
+      // Recent Work Orders (scoped if tech)
       prisma.workOrder.findMany({
+        where: baseOrderWhere,
         take: 5,
         orderBy: { createdAt: "desc" },
         select: {
@@ -262,9 +294,10 @@ export async function GET() {
         },
       }),
 
-      // Work orders for past 6 months trends
+      // Work orders for past 6 months trends (scoped if tech)
       prisma.workOrder.findMany({
         where: {
+          ...baseOrderWhere,
           createdAt: { gte: sixMonthsAgo },
         },
         select: {
@@ -284,7 +317,7 @@ export async function GET() {
       if (g.status === "BUSY") busyTechs = g._count._all;
       if (g.status === "OFF") offlineTechs = g._count._all;
     });
-    const totalTechnicians = availableTechs + busyTechs + offlineTechs;
+    const totalTechnicians = isTechnician ? 1 : availableTechs + busyTechs + offlineTechs;
 
     // Process Work Order Status Counts
     let openOrders = 0;
@@ -355,35 +388,35 @@ export async function GET() {
         key: "OPEN",
         count: openOrders,
         percentage: totalWorkOrders > 0 ? Math.round((openOrders / totalWorkOrders) * 100) : 0,
-        color: "#0284c7", // sky-600
+        color: "#0284c7",
       },
       {
         status: "Assigned",
         key: "ASSIGNED",
         count: assignedOrders,
         percentage: totalWorkOrders > 0 ? Math.round((assignedOrders / totalWorkOrders) * 100) : 0,
-        color: "#4f46e5", // indigo-600
+        color: "#4f46e5",
       },
       {
         status: "In Progress",
         key: "IN_PROGRESS",
         count: inProgressOrders,
         percentage: totalWorkOrders > 0 ? Math.round((inProgressOrders / totalWorkOrders) * 100) : 0,
-        color: "#9333ea", // purple-600
+        color: "#9333ea",
       },
       {
         status: "Completed",
         key: "COMPLETED",
         count: completedOrders,
         percentage: totalWorkOrders > 0 ? Math.round((completedOrders / totalWorkOrders) * 100) : 0,
-        color: "#10b981", // emerald-500
+        color: "#10b981",
       },
       {
         status: "Cancelled",
         key: "CANCELLED",
         count: cancelledOrders,
         percentage: totalWorkOrders > 0 ? Math.round((cancelledOrders / totalWorkOrders) * 100) : 0,
-        color: "#64748b", // slate-500
+        color: "#64748b",
       },
     ];
 
@@ -394,32 +427,32 @@ export async function GET() {
         key: "URGENT",
         count: urgentPriority,
         percentage: totalWorkOrders > 0 ? Math.round((urgentPriority / totalWorkOrders) * 100) : 0,
-        color: "#e11d48", // rose-600
+        color: "#e11d48",
       },
       {
         priority: "High",
         key: "HIGH",
         count: highPriority,
         percentage: totalWorkOrders > 0 ? Math.round((highPriority / totalWorkOrders) * 100) : 0,
-        color: "#d97706", // amber-600
+        color: "#d97706",
       },
       {
         priority: "Medium",
         key: "MEDIUM",
         count: mediumPriority,
         percentage: totalWorkOrders > 0 ? Math.round((mediumPriority / totalWorkOrders) * 100) : 0,
-        color: "#2563eb", // blue-600
+        color: "#2563eb",
       },
       {
         priority: "Low",
         key: "LOW",
         count: lowPriority,
         percentage: totalWorkOrders > 0 ? Math.round((lowPriority / totalWorkOrders) * 100) : 0,
-        color: "#64748b", // slate-500
+        color: "#64748b",
       },
     ];
 
-    // Combine & Normalize Recent Activity Feed (Limit to Top 10 latest events)
+    // Combine & Normalize Recent Activity Feed
     const activities: Array<{
       id: string;
       type: "STATUS_TRANSITION" | "WORK_ORDER_CREATED" | "CUSTOMER_CREATED" | "TECHNICIAN_CREATED";
@@ -455,46 +488,46 @@ export async function GET() {
       activities.push({
         id: `wo-${wo.id}`,
         type: "WORK_ORDER_CREATED",
-        title: `Work Order Dispatched: "${wo.title}"`,
-        description: `Created for client ${wo.customer?.name || "Client"} with priority ${wo.priority}`,
+        title: `Work Order: "${wo.title}"`,
+        description: `Priority: ${wo.priority} • Status: ${wo.status}`,
         timestamp: new Date(wo.createdAt).toISOString(),
-        badgeText: "New Order",
+        badgeText: isTechnician ? "Assigned Job" : "New Order",
         badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
       });
     });
 
-    // 3. Newly created customers
-    (recentCustomers as CustomerRecord[]).forEach((c: CustomerRecord) => {
-      activities.push({
-        id: `cust-${c.id}`,
-        type: "CUSTOMER_CREATED",
-        title: `New Customer Onboarded: ${c.name}`,
-        description: `${c.company ? c.company + " • " : ""}${c.city || "New Account"} registered in database`,
-        timestamp: new Date(c.createdAt).toISOString(),
-        badgeText: "New Customer",
-        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    // 3. Customers and Tech additions for Admin/Dispatcher
+    if (!isTechnician) {
+      (recentCustomers as CustomerRecord[]).forEach((c: CustomerRecord) => {
+        activities.push({
+          id: `cust-${c.id}`,
+          type: "CUSTOMER_CREATED",
+          title: `New Customer Onboarded: ${c.name}`,
+          description: `${c.company ? c.company + " • " : ""}${c.city || "New Account"} registered in database`,
+          timestamp: new Date(c.createdAt).toISOString(),
+          badgeText: "New Customer",
+          badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        });
       });
-    });
 
-    // 4. Newly created technicians
-    (recentTechnicians as TechnicianRecord[]).forEach((t: TechnicianRecord) => {
-      activities.push({
-        id: `tech-${t.id}`,
-        type: "TECHNICIAN_CREATED",
-        title: `Technician Provisioned: ${t.name}`,
-        description: `Trade: ${t.specialization || "Field Specialist"} • Status: ${t.status}`,
-        timestamp: new Date(t.createdAt).toISOString(),
-        badgeText: "New Tech",
-        badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      (recentTechnicians as TechnicianRecord[]).forEach((t: TechnicianRecord) => {
+        activities.push({
+          id: `tech-${t.id}`,
+          type: "TECHNICIAN_CREATED",
+          title: `Technician Provisioned: ${t.name}`,
+          description: `Trade: ${t.specialization || "Field Specialist"} • Status: ${t.status}`,
+          timestamp: new Date(t.createdAt).toISOString(),
+          badgeText: "New Tech",
+          badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        });
       });
-    });
+    }
 
-    // Sort by timestamp descending and take top 10
     const sortedActivities = activities
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 10);
 
-    // Build Prioritized Smart Alerts (Overdue work orders first, then unassigned, then offline techs)
+    // Build Prioritized Smart Alerts
     const alerts: Array<{
       id: string;
       level: "CRITICAL" | "WARNING" | "INFO";
@@ -511,69 +544,82 @@ export async function GET() {
         id: `overdue-${order.id}`,
         level: "CRITICAL",
         type: "OVERDUE",
-        title: `Overdue SLA: ${order.title}`,
+        title: `Overdue Job: ${order.title}`,
         message: `Scheduled for ${
           order.scheduledAt ? new Date(order.scheduledAt).toLocaleString() : "past time"
-        } for client ${order.customer?.name}. Needs immediate dispatcher attention.`,
+        } for client ${order.customer?.name}. Needs prompt resolution.`,
         targetTab: "work-orders",
         actionText: "View Order",
       });
     });
 
-    // 2. Unassigned Orders (Warning Priority)
-    (unassignedOrders as UnassignedOrderRecord[]).forEach((order: UnassignedOrderRecord) => {
-      alerts.push({
-        id: `unassigned-${order.id}`,
-        level: "WARNING",
-        type: "UNASSIGNED",
-        title: `Unassigned Job: ${order.title}`,
-        message: `Priority: ${order.priority} • Client: ${order.customer?.name}. Waiting in open dispatch pool.`,
-        targetTab: "work-orders",
-        actionText: "Assign Tech",
+    if (!isTechnician) {
+      // 2. Unassigned Orders (Warning Priority)
+      (unassignedOrders as UnassignedOrderRecord[]).forEach((order: UnassignedOrderRecord) => {
+        alerts.push({
+          id: `unassigned-${order.id}`,
+          level: "WARNING",
+          type: "UNASSIGNED",
+          title: `Unassigned Job: ${order.title}`,
+          message: `Priority: ${order.priority} • Client: ${order.customer?.name}. Waiting in open dispatch pool.`,
+          targetTab: "work-orders",
+          actionText: "Assign Tech",
+        });
       });
-    });
 
-    // 3. Offline Technicians (Info Priority)
-    (offlineTechnicians as OfflineTechRecord[]).forEach((tech: OfflineTechRecord) => {
-      alerts.push({
-        id: `offline-${tech.id}`,
-        level: "INFO",
-        type: "OFFLINE_TECH",
-        title: `Technician Offline: ${tech.name}`,
-        message: `${tech.specialization || "Field Tech"} in ${tech.serviceArea || "Metro Area"} is currently Off-Duty.`,
-        targetTab: "technicians",
-        actionText: "View Tech",
+      // 3. Offline Technicians (Info Priority)
+      (offlineTechnicians as OfflineTechRecord[]).forEach((tech: OfflineTechRecord) => {
+        alerts.push({
+          id: `offline-${tech.id}`,
+          level: "INFO",
+          type: "OFFLINE_TECH",
+          title: `Technician Offline: ${tech.name}`,
+          message: `${tech.specialization || "Field Tech"} in ${tech.serviceArea || "Metro Area"} is currently Off-Duty.`,
+          targetTab: "technicians",
+          actionText: "View Tech",
+        });
       });
-    });
+    }
 
     return NextResponse.json({
       metrics: {
         totalCustomers,
         totalTechnicians,
-        availableTechnicians: availableTechs,
-        busyTechnicians: busyTechs,
-        offlineTechnicians: offlineTechs,
+        availableTechnicians: isTechnician ? (authContext.technician?.status === "AVAILABLE" ? 1 : 0) : availableTechs,
+        busyTechnicians: isTechnician ? (authContext.technician?.status === "BUSY" ? 1 : 0) : busyTechs,
+        offlineTechnicians: isTechnician ? (authContext.technician?.status === "OFF" ? 1 : 0) : offlineTechs,
         totalWorkOrders,
         activeWorkOrders,
         completedWorkOrders: completedOrders,
         cancelledWorkOrders: cancelledOrders,
         overdueWorkOrders: overdueOrders.length,
-        unassignedWorkOrders: unassignedOrders.length,
+        unassignedWorkOrders: isTechnician ? 0 : (unassignedOrders as UnassignedOrderRecord[]).length,
       },
       charts: {
         workOrdersByStatus: statusDistribution,
         monthlyTrends,
-        technicianWorkload: (topTechnicians as TopTechRecord[]).map((t: TopTechRecord) => ({
-          id: t.id,
-          name: t.name,
-          specialization: t.specialization || "General Field Ops",
-          status: t.status,
-          activeOrders: t._count.workOrders,
-        })),
+        technicianWorkload: isTechnician
+          ? [
+              {
+                id: techId,
+                name: authContext.technician?.name || authContext.user.name || "Technician",
+                specialization: authContext.technician?.specialization || "Field Specialist",
+                status: authContext.technician?.status || "AVAILABLE",
+                activeOrders: activeWorkOrders,
+              },
+            ]
+          : (topTechnicians as TopTechRecord[]).map((t: TopTechRecord) => ({
+              id: t.id,
+              name: t.name,
+              specialization: t.specialization || "General Field Ops",
+              status: t.status,
+              activeOrders: t._count.workOrders,
+            })),
         workOrdersByPriority: priorityDistribution,
       },
       recentActivity: sortedActivities,
       alerts,
+      role: authContext.role,
     });
   } catch (error) {
     console.error("[DASHBOARD_ANALYTICS_ERROR]", error);

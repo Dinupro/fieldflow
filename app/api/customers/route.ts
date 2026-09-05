@@ -1,46 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
-// Helper to get authenticated user or session
-async function getAuthSession(req: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-    if (session?.user) return session;
-  } catch {
-    // fallback checking cookie directly if needed
-  }
-
-  const sessionToken =
-    req.cookies.get("better-auth.session_token")?.value ||
-    req.cookies.get("__Secure-better-auth.session_token")?.value;
-
-  if (sessionToken) {
-    try {
-      const dbSession = await prisma.session.findUnique({
-        where: { token: sessionToken },
-        include: { user: true },
-      });
-      if (dbSession && dbSession.expiresAt > new Date()) {
-        return { user: dbSession.user, session: dbSession };
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  return null;
-}
-
 // GET /api/customers - List customers with search, pagination, and sorting
 export async function GET(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session) {
+  const authContext = await getAuthUser(req);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -120,11 +87,19 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/customers - Create a new customer record
+// POST /api/customers - Create a new customer record (Dispatcher & Admin only)
 export async function POST(req: NextRequest) {
-  const session = await getAuthSession(req);
-  if (!session) {
+  const authContext = await getAuthUser(req);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot create customers
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians are not authorized to create customers." },
+      { status: 403 }
+    );
   }
 
   try {

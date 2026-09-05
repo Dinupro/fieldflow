@@ -392,8 +392,8 @@ export default function CustomersView() {
         <div className="fixed top-20 right-6 z-50 max-w-md w-full animate-fadeIn shadow-2xl">
           <div
             className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${toast.type === "success"
-                ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
-                : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
+              ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
+              : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
               }`}
           >
             {toast.type === "success" ? (
@@ -587,11 +587,11 @@ export default function CustomersView() {
       </div>
 
       {/* Main Customers Table */}
-      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden">
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden max-h-175 overflow-y-auto">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 border-b border-slate-200 shadow-xs">
+              <tr className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                 <th className="py-3.5 px-4 sm:px-6">Customer & Company</th>
                 <th className="py-3.5 px-4">Contact Details</th>
                 <th className="py-3.5 px-4">Service Location</th>
@@ -739,8 +739,8 @@ export default function CustomersView() {
                       <td className="py-3.5 px-4 text-center">
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${(customer._count?.workOrders ?? 0) > 0
-                              ? "bg-blue-50 text-blue-700 border border-blue-200"
-                              : "bg-slate-100 text-slate-500"
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-slate-100 text-slate-500"
                             }`}
                         >
                           <FileText className="w-3 h-3" />
@@ -825,8 +825,8 @@ export default function CustomersView() {
                       <button
                         onClick={() => setPage(pageNum)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${pagination.page === pageNum
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                       >
                         {pageNum}
@@ -1251,10 +1251,10 @@ export default function CustomersView() {
                       </div>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${wo.status === "COMPLETED"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : wo.status === "IN_PROGRESS"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-blue-100 text-blue-800"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : wo.status === "IN_PROGRESS"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-blue-100 text-blue-800"
                           }`}
                       >
                         {wo.status}

@@ -1,14 +1,9 @@
 {
-  "/about/page": "app/about/page.js",
-  "/api/auth/[...all]/route": "app/api/auth/[...all]/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/customers/route": "app/api/customers/route.js",
   "/api/dashboard/route": "app/api/dashboard/route.js",
-  "/api/technicians/[id]/route": "app/api/technicians/[id]/route.js",
-  "/api/technicians/route": "app/api/technicians/route.js",
+  "/api/users/[id]/route": "app/api/users/[id]/route.js",
+  "/api/users/route": "app/api/users/route.js",
   "/api/work-orders/[id]/route": "app/api/work-orders/[id]/route.js",
-  "/api/work-orders/route": "app/api/work-orders/route.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/page": "app/page.js",
-  "/register/page": "app/register/page.js",
-  "/services/page": "app/services/page.js"
+  "/api/work-orders/route": "app/api/work-orders/route.js"
 }

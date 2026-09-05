@@ -70,6 +70,18 @@ const ReportsView = dynamic(
   }
 );
 
+const UsersView = dynamic(
+  () => import("@/components/dashboard/views/UsersView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
 const SettingsView = dynamic(
   () => import("@/components/dashboard/views/SettingsView"),
   {
@@ -85,6 +97,7 @@ const SettingsView = dynamic(
 export default function DashboardPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const [userRole, setUserRole] = useState<"ADMIN" | "DISPATCHER" | "TECHNICIAN">("DISPATCHER");
   const [activeTab, setActiveTab] = useState<SidebarItemKey>("dashboard");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,6 +109,20 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [session, isPending, router]);
+
+  // Fetch current user's role & permissions
+  useEffect(() => {
+    if (session?.user) {
+      fetch("/api/auth/me")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.role) {
+            setUserRole(data.role);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session]);
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
@@ -115,6 +142,7 @@ export default function DashboardPage() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onLogoutClick={() => setShowLogoutModal(true)}
+        role={userRole}
       />
 
       {/* 2. Main Content Area */}
@@ -123,13 +151,16 @@ export default function DashboardPage() {
           isCollapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        {/* Top Navbar with Profile, Notifications & Search */}
+        {/* Top Navbar with Profile, Notifications, Search & Breadcrumbs */}
         <TopNavbar
           onMenuToggle={() => setMobileOpen(!mobileOpen)}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onLogoutClick={() => setShowLogoutModal(true)}
           onSettingsClick={() => setActiveTab("settings")}
+          onUsersClick={() => setActiveTab("users")}
+          activeTab={activeTab}
+          role={userRole}
         />
 
         {/* Dynamic View Body */}
@@ -139,8 +170,9 @@ export default function DashboardPage() {
           )}
           {activeTab === "customers" && <CustomersView />}
           {activeTab === "technicians" && <TechniciansView />}
-          {activeTab === "work-orders" && <WorkOrdersView />}
+          {activeTab === "work-orders" && <WorkOrdersView role={userRole} />}
           {activeTab === "schedule" && <ScheduleView />}
+          {activeTab === "users" && <UsersView />}
           {activeTab === "reports" && <ReportsView />}
           {activeTab === "settings" && <SettingsView />}
         </main>
@@ -159,7 +191,7 @@ export default function DashboardPage() {
                 Confirm Sign Out
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Are you sure you want to log out of your FieldFlow dispatcher session? You will be redirected to the login portal.
+                Are you sure you want to log out of your FieldFlow session? You will be redirected to the login portal.
               </p>
             </div>
 

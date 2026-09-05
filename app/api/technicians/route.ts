@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -9,11 +8,9 @@ export const dynamic = "force-dynamic";
 
 // GET /api/technicians - List, search, filter, and paginate technicians
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -108,14 +105,20 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/technicians - Create a new technician
+// POST /api/technicians - Create a new technician (Dispatcher & Admin only)
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot provision other technicians
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians cannot create technician profiles." },
+      { status: 403 }
+    );
   }
 
   try {

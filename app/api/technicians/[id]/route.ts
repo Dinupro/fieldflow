@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -12,11 +11,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,11 +57,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -72,6 +67,22 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const { name, email, phone, specialization, skills, status, serviceArea, notes, avatar } = body;
+
+    const existingTech = await prisma.technician.findUnique({
+      where: { id },
+    });
+
+    if (!existingTech) {
+      return NextResponse.json({ error: "Technician not found" }, { status: 404 });
+    }
+
+    // RBAC Guard: Technician can only update their own profile
+    if (authContext.isTechnician && authContext.technician?.id !== id) {
+      return NextResponse.json(
+        { error: "Forbidden: You are only authorized to update your own technician status and profile." },
+        { status: 403 }
+      );
+    }
 
     const errors: Record<string, string> = {};
 
@@ -154,17 +165,23 @@ export async function PUT(
   }
 }
 
-// DELETE /api/technicians/[id] - Safe deletion guard protecting active work orders
+// DELETE /api/technicians/[id] - Safe deletion guard (Dispatcher & Admin only)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot delete technician records
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians cannot delete technician profiles." },
+      { status: 403 }
+    );
   }
 
   try {

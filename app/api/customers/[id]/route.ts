@@ -1,40 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
-
-async function getAuthSession(req: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-    if (session?.user) return session;
-  } catch {
-    // fallback
-  }
-
-  const sessionToken =
-    req.cookies.get("better-auth.session_token")?.value ||
-    req.cookies.get("__Secure-better-auth.session_token")?.value;
-
-  if (sessionToken) {
-    try {
-      const dbSession = await prisma.session.findUnique({
-        where: { token: sessionToken },
-        include: { user: true },
-      });
-      if (dbSession && dbSession.expiresAt > new Date()) {
-        return { user: dbSession.user, session: dbSession };
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  return null;
-}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -42,8 +10,8 @@ interface RouteParams {
 
 // GET /api/customers/[id] - Get customer details
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  const session = await getAuthSession(req);
-  if (!session) {
+  const authContext = await getAuthUser(req);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -83,11 +51,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PUT /api/customers/[id] - Update customer record
+// PUT /api/customers/[id] - Update customer record (Dispatcher & Admin only)
 export async function PUT(req: NextRequest, { params }: RouteParams) {
-  const session = await getAuthSession(req);
-  if (!session) {
+  const authContext = await getAuthUser(req);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot update customer records
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians are not authorized to edit customers." },
+      { status: 403 }
+    );
   }
 
   try {
@@ -172,11 +148,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE /api/customers/[id] - Safe deletion of customer record
+// DELETE /api/customers/[id] - Safe deletion of customer record (Dispatcher & Admin only)
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
-  const session = await getAuthSession(req);
-  if (!session) {
+  const authContext = await getAuthUser(req);
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot delete customer records
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians are not authorized to delete customers." },
+      { status: 403 }
+    );
   }
 
   try {

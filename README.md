@@ -65,10 +65,28 @@ Built using the modern **Next.js App Router**, **React 19**, and **Tailwind CSS*
 
 ## ✨ Features
 
+### 🔐 Enterprise Role-Based Access Control (RBAC)
+FieldFlow enforces strict, multi-tiered authorization across both the API routes and frontend interface:
+- **👑 Administrator (`ADMIN`)**:
+  - Full organizational oversight and unrestricted record access.
+  - Complete executive dashboard analytics across all dispatch operations.
+  - User & Access Management console (`/dashboard` Users view) for promoting users to `ADMIN`, `DISPATCHER`, or `TECHNICIAN`, linking technician profiles, and deleting unauthorized accounts.
+- **📡 Dispatcher (`DISPATCHER`)**:
+  - Full dispatch operations: customer creation and editing, technician roster management, work order scheduling, and prioritization.
+  - Intelligent technician assignment with availability guards (`AVAILABLE`, `BUSY`, `OFF`).
+  - View full dispatch dashboard, activity logs, and real-time SLA trackers.
+  - Restricted from accessing user administration (enforced via `403 Forbidden`).
+- **🔧 Field Technician (`TECHNICIAN`)**:
+  - **Scoped Job View**: Technicians only see work orders specifically assigned to their linked profile (`where: { technicianId: auth.technician.id }`).
+  - **Direct Job Execution**: One-click **"Start Work"** button (transitions order to `IN_PROGRESS`) and **"Complete Job"** modal with completion notes & resolution timestamps (`COMPLETED`).
+  - **Strict Security Guardrails**: Cannot create, edit, or delete customers, technicians, or other technicians' work orders (enforced via server-side `403 Forbidden` guards).
+  - Scoped dashboard metrics showing only personal assignments, completion velocity, and pending tasks.
+
 ### 🛡️ Secure Authentication & Session Management
 - Multi-factor ready email/password authentication powered by **Better Auth**.
 - Secure, encrypted HTTP-only session cookies (`better-auth.session_token`).
 - Route middleware protection guarding `/dashboard`, `/customers`, `/technicians`, and `/work-orders`.
+- Auto-linking: When a technician registers with the email of an existing technician profile, their account is automatically associated.
 - Auto-redirect mechanisms for authenticated vs. unauthenticated visitors.
 
 ### 📊 Real-Time Dispatch Analytics
@@ -99,6 +117,17 @@ Built using the modern **Next.js App Router**, **React 19**, and **Tailwind CSS*
 - **Automated StatusLog Timeline**: Every state transition (`OPEN` $\rightarrow$ `ASSIGNED` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED`) is permanently recorded with user attribution and timestamps.
 - Overdue job detection based on scheduled SLA deadlines.
 - Multi-criteria filter tabs (`Status`, `Priority`, `Technician`, `Search`, `Sort`).
+
+### 🎨 Modern SaaS Design System & UI/UX Polish
+- **Role-Aware Sidebar Navigation**: Custom navigation groups tailored specifically for Administrators, Dispatchers, and Technicians.
+- **Standardized Semantic Badge System (`components/ui/Badge.tsx`)**:
+  - **Status**: Open (Blue), Assigned (Indigo), In Progress (Orange/Amber), Completed (Green/Emerald), Cancelled (Red/Rose).
+  - **Priority**: Urgent (Red with pulse ping), High (Orange), Medium (Blue), Low (Gray).
+  - **Availability**: Available (Green with pulse), Busy (Orange), Offline (Gray).
+- **Dynamic Breadcrumbs**: Real-time breadcrumb tracking in the top navigation bar (`FieldFlow > Executive Overview`, `FieldFlow > Work Order Dispatch`).
+- **Responsive Data Tables**: Sticky table headers (`sticky top-0 bg-slate-50/95 backdrop-blur-xs`), alternating zebra rows (`even:bg-slate-50/40`), and scroll-constrained viewports.
+- **Accessible Forms & Feedback**: Required field asterisks (`*`), accessible focus rings (`focus:ring-2 focus:ring-blue-600/20`), loading spinners on submit buttons, and red-accented delete confirmation dialogs.
+- **Friendly Empty States (`components/ui/EmptyState.tsx`)**: Clean illustrations, contextual guidance, and primary call-to-action buttons when tables or searches return no records.
 
 ---
 
@@ -203,16 +232,22 @@ fieldflow/
 │   ├── login/page.tsx                  # Authentication / Login
 │   ├── register/page.tsx               # User Registration
 │   ├── layout.tsx                      # Root Application Layout
-│   └── page.tsx                        # Public SaaS Landing Page
-├── components/                         # Reusable UI Components
-│   ├── dashboard/                      # Dashboard Design System
-│   │   ├── Sidebar.tsx                 # Dynamic Collapsible Sidebar
-│   │   ├── TopNavbar.tsx               # Authenticated Header Bar
+├── components/                         # Reusable UI Components & Design System
+│   ├── ui/                             # Design System Primitives
+│   │   ├── Badge.tsx                   # Semantic Status, Priority & Availability Badges
+│   │   ├── EmptyState.tsx              # Illustration Empty States with CTA
+│   │   └── LoadingSpinner.tsx          # Shimmer Skeletons & Inline Spinners
+│   ├── dashboard/                      # Dashboard Layout & Views
+│   │   ├── Sidebar.tsx                 # Grouped Navigation Collapsible Sidebar
+│   │   ├── TopNavbar.tsx               # Header with Breadcrumbs & Notifications
 │   │   └── views/                      # Interactive Module Views
 │   │       ├── DashboardView.tsx       # Live Analytics & Charts View
 │   │       ├── CustomersView.tsx       # Customer Table & Modals
 │   │       ├── TechniciansView.tsx     # Technician Roster & Modals
-│   │       └── WorkOrdersView.tsx      # Work Order Dispatch & Timeline
+│   │       ├── WorkOrdersView.tsx      # Work Order Dispatch & Timeline
+│   │       ├── ScheduleView.tsx        # Dispatch Calendar & Timeline
+│   │       ├── ReportsView.tsx         # KPI Reports View
+│   │       └── SettingsView.tsx        # System Settings View
 │   └── landing/                        # Landing Page Sections
 │       ├── Navbar.tsx
 │       ├── Hero.tsx

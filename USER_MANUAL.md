@@ -72,14 +72,52 @@ Welcome to **FieldFlow**! FieldFlow is a centralized field service dispatch and 
 
 ---
 
-## 3. Navigating the Dashboard
+## 3. User Roles & Permission System
 
-FieldFlow is organized into simple, intuitive sections accessible via the left-hand navigation sidebar:
+FieldFlow features a dedicated Role-Based Access Control (RBAC) architecture tailored to field service operations:
 
-- **⚡ Dashboard**: Central dispatch analytics, team workload charts, and prioritized alerts.
-- **📑 Work Orders**: Full list of active, scheduled, and completed service jobs.
-- **🛠️ Technicians**: Roster of field staff, skill tags, and availability statuses.
-- **👥 Customers**: Customer directory and account histories.
+### 👑 3.1 Administrator Role (`ADMIN`)
+- **System Oversight**: Complete administrative control over all organization records, customers, technicians, work orders, and analytics.
+- **User & Access Management**: Exclusive access to the **Users & Roles** console (`/dashboard` Users view) in the sidebar. Administrators can:
+  - Search and filter all registered system users.
+  - Change user roles between `Administrator`, `Dispatcher`, and `Technician`.
+  - Link or unlink user accounts to specific `Technician` profiles.
+  - Delete unauthorized or inactive user accounts with confirmation safeguards.
+
+### 📡 3.2 Dispatcher Role (`DISPATCHER`)
+- **Operations & Scheduling**: Create and manage customer accounts, maintain the technician roster, schedule service visits, assign work orders, and set urgency priorities (`LOW`, `MEDIUM`, `HIGH`, `URGENT`).
+- **Dispatch Intelligence**: Access the full operational dashboard, velocity charts, live SLA alerts, and technician workload capacity bars.
+- **Guardrails**: System administration (modifying other users' roles or deleting accounts) is disabled and strictly protected.
+
+### 🔧 3.3 Field Technician Role (`TECHNICIAN`)
+- **Scoped Job Stream**: Field technicians only see jobs assigned directly to them. Customer phone numbers, addresses, priorities, and schedules are formatted for mobile and tablet readability.
+- **Fast Job Execution**:
+  1. **Start Work**: When arriving on site, click the purple **"Start Work"** button on an assigned order to change its status to `IN_PROGRESS` and notify dispatch.
+  2. **Complete Job**: Upon finishing the repair/installation, click the emerald **"Complete Job"** button, enter mandatory **Completion Notes** describing the work done, and submit to finalize the ticket as `COMPLETED`.
+- **Protected Security**: Technicians cannot delete orders, reassign jobs to other technicians, or modify customer records.
+
+---
+
+## 4. Navigating the Dashboard
+
+FieldFlow adapts its navigation sidebar dynamically based on your logged-in role:
+
+- **👑 Administrator Menu**:
+  - **⚡ Dashboard**: Full executive analytics and activity feeds.
+  - **📑 Work Orders**: Complete work order registry.
+  - **🛠️ Technicians**: Full roster with availability controls.
+  - **👥 Customers**: Full customer registry.
+  - **🔐 Users & Roles**: User account permissions and profile linking.
+
+- **📡 Dispatcher Menu**:
+  - **⚡ Dashboard**: Real-time dispatch intelligence & SLA alerts.
+  - **📑 Work Orders**: Scheduling, priority, and assignment tools.
+  - **🛠️ Technicians**: Technician availability & skills management.
+  - **👥 Customers**: Customer directory and service histories.
+
+- **🔧 Field Technician Menu**:
+  - **⚡ My Overview**: Personal workload stats, pending jobs, and completion rate.
+  - **📑 My Assigned Jobs**: Focused view of orders assigned directly to you.
 
 > **💡 Quick Tip**: The badge at the top right of your screen shows **"Postgres Live"** with a green pulse, indicating that your dashboard is receiving real-time updates directly from the database.
 

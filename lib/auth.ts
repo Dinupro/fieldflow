@@ -17,6 +17,17 @@ export const auth = betterAuth({
     enabled: true,
   },
 
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "DISPATCHER",
+        input: false,
+      },
+    },
+  },
+
   secret: process.env.BETTER_AUTH_SECRET || "346b55455e20bdcaab06f85442f20bca0c9b5785d1129cde2caaa112568d967f",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });

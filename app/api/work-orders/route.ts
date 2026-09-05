@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/work-orders - List, search, filter, paginate work orders with metrics
+// GET /api/work-orders - List, search, filter, paginate work orders with RBAC scoping
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,6 +28,23 @@ export async function GET(req: NextRequest) {
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
     const andConditions: Record<string, unknown>[] = [];
+
+    // RBAC Scoping: If user is TECHNICIAN, strictly enforce filter to their own assigned jobs only
+    if (authContext.isTechnician) {
+      if (authContext.technician?.id) {
+        andConditions.push({ technicianId: authContext.technician.id });
+      } else {
+        // If technician profile not linked yet, return empty list
+        andConditions.push({ technicianId: "00000000-0000-0000-0000-000000000000" });
+      }
+    } else if (technicianFilter) {
+      // Dispatcher or Admin filtering by technician
+      if (technicianFilter === "unassigned") {
+        andConditions.push({ technicianId: null });
+      } else if (technicianFilter !== "all") {
+        andConditions.push({ technicianId: technicianFilter });
+      }
+    }
 
     // Search filter
     if (search) {
@@ -65,15 +79,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Technician filter
-    if (technicianFilter) {
-      if (technicianFilter === "unassigned") {
-        andConditions.push({ technicianId: null });
-      } else if (technicianFilter !== "all") {
-        andConditions.push({ technicianId: technicianFilter });
-      }
-    }
-
     // Customer filter
     if (customerFilter && customerFilter !== "all") {
       andConditions.push({ customerId: customerFilter });
@@ -85,6 +90,11 @@ export async function GET(req: NextRequest) {
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
 
     const now = new Date();
+
+    // Base scope for status metric counts (scoped if technician)
+    const baseScope = authContext.isTechnician
+      ? { technicianId: authContext.technician?.id || "00000000-0000-0000-0000-000000000000" }
+      : {};
 
     const [
       total,
@@ -128,13 +138,14 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      prisma.workOrder.count({ where: { status: "OPEN" } }),
-      prisma.workOrder.count({ where: { status: "ASSIGNED" } }),
-      prisma.workOrder.count({ where: { status: "IN_PROGRESS" } }),
-      prisma.workOrder.count({ where: { status: "COMPLETED" } }),
-      prisma.workOrder.count({ where: { status: "CANCELLED" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "OPEN" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "ASSIGNED" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "IN_PROGRESS" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "COMPLETED" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "CANCELLED" } }),
       prisma.workOrder.count({
         where: {
+          ...baseScope,
           scheduledAt: { lt: now },
           status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] },
         },
@@ -170,14 +181,20 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/work-orders - Create a new work order with technician availability validation and StatusLog tracking
+// POST /api/work-orders - Create a new work order (Dispatcher & Admin only)
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot create work orders
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians cannot create work orders. Please request dispatch from a Dispatcher or Administrator." },
+      { status: 403 }
+    );
   }
 
   try {
@@ -282,7 +299,7 @@ export async function POST(req: NextRequest) {
     await prisma.statusLog.create({
       data: {
         workOrderId: created.id,
-        changedById: session.user.id,
+        changedById: authContext.user.id,
         fromStatus: "OPEN",
         toStatus: finalStatus,
       },

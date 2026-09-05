@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthUser } from "@/lib/auth-guard";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -13,11 +12,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,6 +45,14 @@ export async function GET(
       return NextResponse.json({ error: "Work order not found" }, { status: 404 });
     }
 
+    // RBAC Guard: Technician can only view their own assigned work orders
+    if (authContext.isTechnician && workOrder.technicianId !== authContext.technician?.id) {
+      return NextResponse.json(
+        { error: "Forbidden: You are only authorized to view work orders assigned to you." },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(workOrder);
   } catch (error) {
     console.error("[WORK_ORDER_GET_ERROR]", error);
@@ -58,16 +63,14 @@ export async function GET(
   }
 }
 
-// PUT /api/work-orders/[id] - Update work order, validate technician availability, and create StatusLog on status change
+// PUT /api/work-orders/[id] - Update work order (Role-aware: Technicians can start/update work and add completion notes; Dispatchers/Admins have full editing)
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -94,6 +97,69 @@ export async function PUT(
       return NextResponse.json({ error: "Work order not found" }, { status: 404 });
     }
 
+    // RBAC Authorization for Technicians
+    if (authContext.isTechnician) {
+      // Must be assigned to this technician
+      if (existingOrder.technicianId !== authContext.technician?.id) {
+        return NextResponse.json(
+          { error: "Forbidden: You can only update work orders assigned to you." },
+          { status: 403 }
+        );
+      }
+
+      // Technicians can only transition status (IN_PROGRESS, COMPLETED) and save completionNotes
+      const allowedStatuses: WorkOrderStatusType[] = ["ASSIGNED", "IN_PROGRESS", "COMPLETED"];
+      let techStatus: WorkOrderStatusType = existingOrder.status;
+      if (status && allowedStatuses.includes(status)) {
+        techStatus = status as WorkOrderStatusType;
+      }
+
+      let techCompletedAt = existingOrder.completedAt;
+      if (techStatus === "COMPLETED") {
+        techCompletedAt = completedAt ? new Date(completedAt) : new Date();
+      } else if (techStatus === "IN_PROGRESS" || techStatus === "ASSIGNED") {
+        techCompletedAt = null;
+      }
+
+      const previousStatus = existingOrder.status;
+      const isStatusChanged = previousStatus !== techStatus;
+
+      const updated = await prisma.workOrder.update({
+        where: { id },
+        data: {
+          status: techStatus,
+          completionNotes: completionNotes !== undefined ? completionNotes?.trim() || null : existingOrder.completionNotes,
+          completedAt: techCompletedAt,
+        },
+        include: {
+          customer: true,
+          technician: true,
+          statusLogs: {
+            orderBy: { changedAt: "desc" },
+            include: {
+              changedBy: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (isStatusChanged) {
+        await prisma.statusLog.create({
+          data: {
+            workOrderId: id,
+            changedById: authContext.user.id,
+            fromStatus: previousStatus,
+            toStatus: techStatus,
+          },
+        });
+      }
+
+      return NextResponse.json(updated);
+    }
+
+    // DISPATCHER & ADMIN Full Update Flow
     const errors: Record<string, string> = {};
 
     if (!title || typeof title !== "string" || title.trim().length < 3) {
@@ -218,7 +284,7 @@ export async function PUT(
       await prisma.statusLog.create({
         data: {
           workOrderId: id,
-          changedById: session.user.id,
+          changedById: authContext.user.id,
           fromStatus: previousStatus,
           toStatus: finalStatus,
         },
@@ -235,17 +301,23 @@ export async function PUT(
   }
 }
 
-// DELETE /api/work-orders/[id] - Safe deletion of work order and cascade associated status logs
+// DELETE /api/work-orders/[id] - Safe deletion of work order (Dispatcher & Admin only)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getAuthUser(req);
 
-  if (!session) {
+  if (!authContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // RBAC Guard: Technicians cannot delete work orders
+  if (authContext.isTechnician) {
+    return NextResponse.json(
+      { error: "Forbidden: Field Technicians cannot delete work orders." },
+      { status: 403 }
+    );
   }
 
   try {
