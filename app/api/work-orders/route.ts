@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { triggerLifecycleNotification } from "@/lib/notifications";
+import { logActivity } from "@/lib/audit-logger";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType =
@@ -383,6 +384,26 @@ export async function POST(req: NextRequest) {
         role: authContext.role,
       },
       technicianName: created.technician?.name || null,
+    });
+
+    // Record immutable audit log
+    await logActivity({
+      req,
+      action: "WORK_ORDER_CREATE",
+      entityType: "WORK_ORDER",
+      entityId: created.id,
+      entityName: created.title,
+      description: `Work order "${created.title}" created with status ${created.status} and priority ${created.priority}.`,
+      authContext,
+      metadata: {
+        customer: created.customer?.name,
+        customerId: created.customerId,
+        technician: created.technician?.name || "Unassigned",
+        technicianId: created.technicianId,
+        priority: created.priority,
+        status: created.status,
+        scheduledAt: created.scheduledAt,
+      },
     });
 
     return NextResponse.json(created, { status: 201 });

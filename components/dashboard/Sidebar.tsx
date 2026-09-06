@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 
 export type SidebarItemKey =
@@ -22,6 +23,7 @@ export type SidebarItemKey =
   | "work-orders"
   | "schedule"
   | "reports"
+  | "activity"
   | "users"
   | "settings"
   | "logout";
@@ -124,9 +126,16 @@ export default function Sidebar({
         ],
       },
       {
-        title: "Analytics & System",
+        title: "Analytics & Compliance",
         items: [
           { key: "reports", label: "Reports & KPIs", icon: BarChart3 },
+          {
+            key: "activity",
+            label: "Audit Logs & History",
+            icon: Activity,
+            badge: "SOC2",
+            badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+          },
           { key: "settings", label: "Platform Settings", icon: Settings },
         ],
       },
@@ -165,6 +174,13 @@ export default function Sidebar({
         title: "Analytics & Settings",
         items: [
           { key: "reports", label: "Reports & KPIs", icon: BarChart3 },
+          {
+            key: "activity",
+            label: "Audit Logs",
+            icon: Activity,
+            badge: "Logs",
+            badgeColor: "bg-teal-500/20 text-teal-300 border-teal-400/30",
+          },
           { key: "settings", label: "Settings", icon: Settings },
         ],
       },

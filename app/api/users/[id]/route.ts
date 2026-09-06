@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, UserRole } from "@/lib/auth-guard";
+import { logActivity } from "@/lib/audit-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,21 @@ export async function PUT(
       },
     });
 
+    await logActivity({
+      req,
+      action: "USER_ROLE_UPDATE",
+      entityType: "USER",
+      entityId: updatedUser.id,
+      entityName: updatedUser.name || updatedUser.email,
+      description: `User ${updatedUser.name || updatedUser.email} role updated from ${targetUser.role} to ${newRole}.`,
+      authContext,
+      metadata: {
+        previousRole: targetUser.role,
+        newRole,
+        technicianLinked: !!updatedUser.technician,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       user: updatedUser,
@@ -176,6 +192,20 @@ export async function DELETE(
     // Delete user (cascades sessions and accounts)
     await prisma.user.delete({
       where: { id },
+    });
+
+    await logActivity({
+      req,
+      action: "USER_DELETE",
+      entityType: "USER",
+      entityId: id,
+      entityName: targetUser.name || targetUser.email,
+      description: `User ${targetUser.name || targetUser.email} deleted by admin.`,
+      authContext,
+      metadata: {
+        email: targetUser.email,
+        role: targetUser.role,
+      },
     });
 
     return NextResponse.json({

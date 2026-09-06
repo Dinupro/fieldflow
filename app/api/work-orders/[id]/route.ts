@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { triggerLifecycleNotification, LifecycleEvent } from "@/lib/notifications";
+import { logActivity } from "@/lib/audit-logger";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType =
@@ -308,6 +309,31 @@ export async function PUT(
         technicianName: existingOrder.technician?.name || authContext.user.name,
       });
 
+      // Audit Log for Technician Action
+      let auditAction: "WORK_ORDER_ACCEPT" | "WORK_ORDER_START" | "WORK_ORDER_PAUSE" | "WORK_ORDER_RESUME" | "WORK_ORDER_COMPLETE" | "WORK_ORDER_UPDATE" = "WORK_ORDER_UPDATE";
+      if (newStatus === "ACCEPTED") auditAction = "WORK_ORDER_ACCEPT";
+      else if (newStatus === "IN_PROGRESS" && currentStatus === "ACCEPTED") auditAction = "WORK_ORDER_START";
+      else if (newStatus === "PAUSED") auditAction = "WORK_ORDER_PAUSE";
+      else if (newStatus === "IN_PROGRESS" && currentStatus === "PAUSED") auditAction = "WORK_ORDER_RESUME";
+      else if (newStatus === "COMPLETED") auditAction = "WORK_ORDER_COMPLETE";
+
+      await logActivity({
+        req,
+        action: auditAction,
+        entityType: "WORK_ORDER",
+        entityId: updated.id,
+        entityName: updated.title,
+        description: `Technician ${authContext.user.name} transitioned work order "${updated.title}" from ${currentStatus} to ${newStatus}.`,
+        authContext,
+        metadata: {
+          previousStatus: currentStatus,
+          newStatus,
+          completionNotes: finalCompletionNotes,
+          notes: logNote,
+          technician: updated.technician?.name,
+        },
+      });
+
       return NextResponse.json(updated);
     }
 
@@ -532,6 +558,34 @@ export async function PUT(
       });
     }
 
+    // Determine audit action for Dispatcher update
+    let auditAction: "WORK_ORDER_ASSIGN" | "WORK_ORDER_CANCEL" | "WORK_ORDER_CLOSE" | "WORK_ORDER_COMPLETE" | "WORK_ORDER_UPDATE" = "WORK_ORDER_UPDATE";
+    if (finalStatus === "CLOSED") auditAction = "WORK_ORDER_CLOSE";
+    else if (finalStatus === "CANCELLED") auditAction = "WORK_ORDER_CANCEL";
+    else if (finalStatus === "COMPLETED") auditAction = "WORK_ORDER_COMPLETE";
+    else if (cleanTechId && cleanTechId !== existingOrder.technicianId) auditAction = "WORK_ORDER_ASSIGN";
+
+    await logActivity({
+      req,
+      action: auditAction,
+      entityType: "WORK_ORDER",
+      entityId: updated.id,
+      entityName: updated.title,
+      description: isStatusChanged
+        ? `Work order "${updated.title}" status transitioned from ${previousStatus} to ${finalStatus}.`
+        : cleanTechId !== existingOrder.technicianId
+        ? `Work order "${updated.title}" assigned to ${updated.technician?.name || "unassigned"}.`
+        : `Work order "${updated.title}" details updated.`,
+      authContext,
+      metadata: {
+        previousStatus,
+        newStatus: finalStatus,
+        technician: updated.technician?.name || null,
+        priority: updated.priority,
+        notes: logNote,
+      },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[WORK_ORDER_PUT_ERROR]", error);
@@ -584,6 +638,19 @@ export async function DELETE(
     if (techId) {
       await syncTechAvailability(techId);
     }
+
+    await logActivity({
+      req,
+      action: "WORK_ORDER_DELETE",
+      entityType: "WORK_ORDER",
+      entityId: id,
+      entityName: workOrder.title,
+      description: `Work order "${workOrder.title}" deleted.`,
+      authContext,
+      metadata: {
+        technicianId: techId,
+      },
+    });
 
     return NextResponse.json({
       success: true,

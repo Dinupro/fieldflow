@@ -70,6 +70,18 @@ const ReportsView = dynamic(
   }
 );
 
+const ActivityLogsView = dynamic(
+  () => import("@/components/dashboard/views/ActivityLogsView"),
+  {
+    loading: () => (
+      <div className="space-y-4 animate-pulse p-4">
+        <div className="h-10 bg-slate-200 rounded-2xl w-1/3" />
+        <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+      </div>
+    ),
+  }
+);
+
 const UsersView = dynamic(
   () => import("@/components/dashboard/views/UsersView"),
   {
@@ -174,6 +186,7 @@ export default function DashboardPage() {
           {activeTab === "schedule" && <ScheduleView />}
           {activeTab === "users" && <UsersView />}
           {activeTab === "reports" && <ReportsView />}
+          {activeTab === "activity" && <ActivityLogsView role={userRole} />}
           {activeTab === "settings" && <SettingsView />}
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
+import { logActivity } from "@/lib/audit-logger";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -255,6 +256,26 @@ export async function PUT(
       },
     });
 
+    const isStatusChanged = existingTech.status !== updated.status;
+    await logActivity({
+      req,
+      action: isStatusChanged ? "TECHNICIAN_STATUS_CHANGE" : "TECHNICIAN_UPDATE",
+      entityType: "TECHNICIAN",
+      entityId: updated.id,
+      entityName: updated.name,
+      description: isStatusChanged
+        ? `Technician ${updated.name} availability changed from ${existingTech.status} to ${updated.status}.`
+        : `Technician profile updated for ${updated.name}.`,
+      authContext,
+      metadata: {
+        previousStatus: existingTech.status,
+        newStatus: updated.status,
+        skillsCount: processedSkills.length,
+        certificationsCount: processedCerts.length,
+        experienceYears: updated.experienceYears,
+      },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[TECHNICIAN_PUT_ERROR]", error);
@@ -329,6 +350,21 @@ export async function DELETE(
     // Safely delete technician
     await prisma.technician.delete({
       where: { id },
+    });
+
+    await logActivity({
+      req,
+      action: "TECHNICIAN_DELETE",
+      entityType: "TECHNICIAN",
+      entityId: id,
+      entityName: technician.name,
+      description: `Technician ${technician.name} deleted from the system.`,
+      authContext,
+      metadata: {
+        specialization: technician.specialization,
+        email: technician.email,
+        phone: technician.phone,
+      },
     });
 
     return NextResponse.json({

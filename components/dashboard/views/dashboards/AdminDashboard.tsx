@@ -663,6 +663,13 @@ export default function AdminDashboard({
               </h2>
               <p className="text-xs text-slate-500">Real-time state logs and registration audit stream</p>
             </div>
+            <button
+              onClick={() => onNavigate("activity")}
+              className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1 cursor-pointer"
+            >
+              <span>View Audit Trail</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="divide-y divide-slate-100">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
+import { logActivity } from "@/lib/audit-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -182,6 +183,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Record immutable audit log
+    await logActivity({
+      req,
+      authContext,
+      action: "CUSTOMER_UPDATE",
+      entityType: "CUSTOMER",
+      entityId: updated.id,
+      entityName: updated.name,
+      description: `Customer account "${updated.name}" updated by ${authContext.user.name || authContext.user.email}.`,
+      metadata: {
+        company: updated.company,
+        email: updated.email,
+        phone: updated.phone,
+        city: updated.city,
+      },
+    });
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[CUSTOMER_PUT_ERROR]", error);
@@ -245,6 +263,21 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     // Safe deletion: remove customer record (cascades closed/completed work orders if any)
     await prisma.customer.delete({
       where: { id },
+    });
+
+    // Record immutable audit log
+    await logActivity({
+      req,
+      authContext,
+      action: "CUSTOMER_DELETE",
+      entityType: "CUSTOMER",
+      entityId: id,
+      entityName: customer.name,
+      description: `Customer account "${customer.name}" permanently deleted by ${authContext.user.name || authContext.user.email}.`,
+      metadata: {
+        email: customer.email,
+        company: customer.company,
+      },
     });
 
     return NextResponse.json({

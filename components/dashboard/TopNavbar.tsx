@@ -233,6 +233,7 @@ export default function TopNavbar({
     technicians: "Field Workforce & Roster",
     "work-orders": role === "TECHNICIAN" ? "My Assigned Work Orders" : "Work Order Dispatch",
     schedule: role === "TECHNICIAN" ? "My Field Schedule" : "Dispatch Calendar",
+    activity: "Audit Logs & Activity Trail",
     users: "User Access & Role Management",
     reports: "Reports & KPIs",
     settings: "System & Account Settings",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
+import { logActivity } from "@/lib/audit-logger";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -361,6 +362,24 @@ export async function POST(req: NextRequest) {
         serviceArea: serviceArea?.trim() || null,
         notes: notes?.trim() || null,
         avatar: avatar?.trim() || null,
+      },
+    });
+
+    // Record immutable audit log
+    await logActivity({
+      req,
+      authContext,
+      action: "TECHNICIAN_CREATE",
+      entityType: "TECHNICIAN",
+      entityId: created.id,
+      entityName: created.name,
+      description: `Technician "${created.name}" added to roster (${created.specialization || "General Operations"}) by ${authContext.user.name || authContext.user.email}.`,
+      metadata: {
+        specialization: created.specialization,
+        skills: created.skills,
+        certifications: created.certifications,
+        serviceArea: created.serviceArea,
+        status: created.status,
       },
     });
 

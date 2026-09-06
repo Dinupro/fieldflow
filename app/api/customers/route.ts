@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
+import { logActivity } from "@/lib/audit-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -263,6 +264,23 @@ export async function POST(req: NextRequest) {
         _count: {
           select: { workOrders: true },
         },
+      },
+    });
+
+    // Record immutable audit log
+    await logActivity({
+      req,
+      authContext,
+      action: "CUSTOMER_CREATE",
+      entityType: "CUSTOMER",
+      entityId: customer.id,
+      entityName: customer.name,
+      description: `Customer account "${customer.name}" created by ${authContext.user.name || authContext.user.email}.`,
+      metadata: {
+        company: customer.company,
+        email: customer.email,
+        phone: customer.phone,
+        city: customer.city,
       },
     });
 

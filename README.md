@@ -23,7 +23,7 @@
 
 ---
 
-## 📋 Table of Contents
+### 📋 Table of Contents
 
 1. [Project Overview](#-project-overview)
 2. [Key Features](#-features)
@@ -41,6 +41,7 @@
     - [Customer Management](#2-customer-management)
     - [Technician Management](#3-technician-management)
     - [Work Order Management](#4-work-order-management)
+    - [Activity Log & Audit Trail](#5-activity-log--audit-trail-soc-2-compliance)
 13. [Screenshots & UI Showcase](#-screenshots--ui-showcase)
 14. [Future Roadmap](#-future-roadmap)
 15. [Contributors & Academic Submission](#-contributors--academic-submission)
@@ -164,6 +165,17 @@ FieldFlow implements a production-grade, state-machine driven lifecycle with str
 - **Role & Target Scoping**: Direct assignment alerts delivered to assigned field technicians; status changes, SLA events, and completion reports broadcasted to dispatchers and administrators.
 - **Pulse Badge & Live Polling**: Unread counter badge on the top navigation bar updating in real time every 15 seconds.
 - **Interactive Notification Tray**: Filter by All vs. Unread, 1-click **Mark all as read**, individual read toggle, and **Clear read** history.
+
+### 🛡️ Enterprise Activity Log & Audit Trail (SOC 2 / HIPAA Ready)
+- **Immutable PostgreSQL Audit Trail**: Dedicated `audit_log` table indexing entity mutations, lifecycle state changes, security events, and user management operations.
+- **Comprehensive Route Instrumentation**:
+  - **Work Orders**: `WORK_ORDER_CREATE`, `WORK_ORDER_ASSIGN`, `WORK_ORDER_ACCEPT`, `WORK_ORDER_START`, `WORK_ORDER_PAUSE`, `WORK_ORDER_RESUME`, `WORK_ORDER_COMPLETE`, `WORK_ORDER_CANCEL`, `WORK_ORDER_CLOSE`, `WORK_ORDER_DELETE`.
+  - **Customers CRM**: `CUSTOMER_CREATE`, `CUSTOMER_UPDATE`, `CUSTOMER_DELETE`.
+  - **Technicians Roster**: `TECHNICIAN_CREATE`, `TECHNICIAN_UPDATE`, `TECHNICIAN_STATUS_CHANGE`, `TECHNICIAN_DELETE`.
+  - **User Access & RBAC**: `USER_ROLE_UPDATE`, `USER_DELETE`.
+- **Non-Blocking Fault Tolerance**: Audit logger writes run safely without blocking critical transaction execution.
+- **Forensic Inspector Modal**: Displays raw JSON state diffs, client IP addresses, user agent metadata, and action payloads with a 1-click clipboard copy utility.
+- **Multi-Vector Search & Filters**: Filter by Actor, Entity Type, Action Code, User Role, and Date Range, with 1-click CSV audit log export.
 
 ### 🎨 Modern SaaS Design System & UI/UX Polish
 - **Role-Aware Sidebar Navigation**: Custom navigation groups tailored specifically for Administrators, Dispatchers, and Technicians.
@@ -495,6 +507,11 @@ All endpoints require an active session cookie, returning `401 Unauthorized` if 
 | `PUT` | `/api/users/[id]` | `{ role: "ADMIN" \| "DISPATCHER" \| "TECHNICIAN", technicianId?: string }` | Updates user role and optionally links a technician profile. |
 | `DELETE` | `/api/users/[id]` | `id: UUID` | Deletes user account (prevents self-deletion). |
 
+### 9. Activity Logs & Audit Trail (`ADMIN` & `DISPATCHER`)
+| Method | Endpoint | Query / Body Params | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/audit-logs` | `?search=&entityType=&action=&userRole=&userId=&startDate=&endDate=&page=1&limit=15` | Multi-field search, filterable, and paginated immutable audit logs with live statistics and unique actor rosters. |
+
 ---
 
 ## 🔍 Module Deep Dives
@@ -515,6 +532,11 @@ All endpoints require an active session cookie, returning `401 Unauthorized` if 
 ### 4. Work Order Management
 - **Rule-Based Assignment**: Rejects assigning technicians flagged as `OFF` (Offline/Off-Duty).
 - **Audit-Proof `StatusLog` History**: Displays a full timeline of who changed the job state and when in the job details modal.
+
+### 5. Activity Log & Audit Trail (SOC 2 Compliance)
+- **Immutable Log Architecture**: Append-only log repository in PostgreSQL with structured JSON state payloads.
+- **Forensic Inspection**: Search by actor, IP address, entity ID, or operation code with deep JSON payload inspection.
+- **CSV Audit Export**: 1-click export of filtered logs for compliance audits.
 
 ---
 

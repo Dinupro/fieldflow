@@ -661,12 +661,21 @@ export default function DispatcherDashboard({
 
         {/* Real-Time Activity Feed */}
         <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-600" />
-              <span>Dispatch Activity Stream</span>
-            </h2>
-            <p className="text-xs text-slate-500">Real-time status transitions and operational updates</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-600" />
+                <span>Dispatch Activity Stream</span>
+              </h2>
+              <p className="text-xs text-slate-500">Real-time status transitions and operational updates</p>
+            </div>
+            <button
+              onClick={() => onNavigate("activity")}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+            >
+              <span>View Audit Trail</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           <div className="divide-y divide-slate-100">

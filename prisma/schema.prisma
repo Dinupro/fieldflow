@@ -51,6 +51,36 @@ enum NotificationType {
   SYSTEM_ALERT
 }
 
+enum AuditAction {
+  AUTH_LOGIN
+  AUTH_REGISTER
+  AUTH_LOGOUT
+  CUSTOMER_CREATE
+  CUSTOMER_UPDATE
+  CUSTOMER_DELETE
+  TECHNICIAN_CREATE
+  TECHNICIAN_UPDATE
+  TECHNICIAN_STATUS_CHANGE
+  TECHNICIAN_DELETE
+  WORK_ORDER_CREATE
+  WORK_ORDER_ASSIGN
+  WORK_ORDER_ACCEPT
+  WORK_ORDER_START
+  WORK_ORDER_PAUSE
+  WORK_ORDER_RESUME
+  WORK_ORDER_COMPLETE
+  WORK_ORDER_CANCEL
+  WORK_ORDER_CLOSE
+  WORK_ORDER_UPDATE
+  WORK_ORDER_DELETE
+  USER_CREATE
+  USER_ROLE_UPDATE
+  USER_DELETE
+  REPORT_EXPORT
+  SETTINGS_UPDATE
+  SYSTEM_EVENT
+}
+
 model User {
   id            String      @id @default(uuid()) @db.Uuid
   name          String?     @db.VarChar(100)
@@ -68,6 +98,7 @@ model User {
   technician    Technician?
   statusLogs    StatusLog[]
   notifications Notification[]
+  auditLogs     AuditLog[]
 
   @@map("user")
 }
@@ -203,3 +234,28 @@ model Notification {
   @@index([createdAt])
   @@map("notification")
 }
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String?     @db.Uuid
+  userName    String?     @db.VarChar(100)
+  userEmail   String?     @db.VarChar(255)
+  userRole    UserRole?
+  action      AuditAction
+  entityType  String      @db.VarChar(50)
+  entityId    String?     @db.VarChar(100)
+  entityName  String?     @db.VarChar(200)
+  description String
+  metadata    Json?
+  ipAddress   String?     @db.VarChar(50)
+  createdAt   DateTime    @default(now()) @db.Timestamp
+
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entityType])
+  @@index([userId])
+  @@map("audit_log")
+}
+
