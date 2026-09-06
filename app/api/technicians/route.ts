@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/audit-logger";
+import { TechnicianCreateSchema, validateSchema } from "@/lib/validations";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -267,6 +268,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // 1. Zod Schema Validation
+    const validation = validateSchema(TechnicianCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
+    }
+
     const {
       name,
       email,
@@ -281,66 +289,34 @@ export async function POST(req: NextRequest) {
       serviceArea,
       notes,
       avatar,
-    } = body;
+    } = validation.data;
 
-    const errors: Record<string, string> = {};
-
-    if (!name || typeof name !== "string" || name.trim().length < 2) {
-      errors.name = "Technician full name is required (min 2 characters).";
-    }
-
-    if (email && typeof email === "string" && email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        errors.email = "Please provide a valid email address.";
+    // 2. Duplicate Email Check
+    if (email) {
+      const existingEmail = await prisma.technician.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+      });
+      if (existingEmail) {
+        return NextResponse.json(
+          {
+            error: `A technician with email "${email}" already exists (${existingEmail.name}).`,
+            errors: { email: "This email address is already registered to another technician." },
+          },
+          { status: 409 }
+        );
       }
     }
 
-    if (status && !["AVAILABLE", "BUSY", "OFF"].includes(status)) {
-      errors.status = "Invalid availability status. Must be AVAILABLE, BUSY, or OFF.";
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json(
-        { error: "Validation failed", errors },
-        { status: 400 }
-      );
-    }
-
-    // Process skills into clean array
-    let processedSkills: string[] = [];
-    if (Array.isArray(skills)) {
-      processedSkills = skills.map((s) => String(s).trim()).filter(Boolean);
-    } else if (typeof skills === "string") {
-      processedSkills = skills
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    // Process certifications into clean array
-    let processedCerts: string[] = [];
-    if (Array.isArray(certifications)) {
-      processedCerts = certifications.map((c) => String(c).trim()).filter(Boolean);
-    } else if (typeof certifications === "string") {
-      processedCerts = certifications
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean);
-    }
-
-    const cleanEmail = email?.trim() || null;
-
-    // Check email uniqueness if provided
-    if (cleanEmail) {
-      const existing = await prisma.technician.findFirst({
-        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    // 3. Duplicate Phone Check
+    if (phone) {
+      const existingPhone = await prisma.technician.findFirst({
+        where: { phone: { equals: phone, mode: "insensitive" } },
       });
-      if (existing) {
+      if (existingPhone) {
         return NextResponse.json(
           {
-            error: "Email conflict",
-            errors: { email: "A technician with this email address is already registered." },
+            error: `A technician with phone "${phone}" already exists (${existingPhone.name}).`,
+            errors: { phone: "This phone number is already registered to another technician." },
           },
           { status: 409 }
         );
@@ -349,19 +325,19 @@ export async function POST(req: NextRequest) {
 
     const created = await prisma.technician.create({
       data: {
-        name: name.trim(),
-        email: cleanEmail,
-        phone: phone?.trim() || null,
-        specialization: specialization?.trim() || null,
-        skills: processedSkills,
-        certifications: processedCerts,
-        rating: typeof rating === "number" ? Math.min(5, Math.max(1, rating)) : 4.9,
-        experienceYears: typeof experienceYears === "number" ? Math.max(0, experienceYears) : 3,
-        maxActiveJobs: typeof maxActiveJobs === "number" ? Math.max(1, maxActiveJobs) : 3,
+        name,
+        email: email || null,
+        phone: phone || null,
+        specialization: specialization || null,
+        skills,
+        certifications,
+        rating,
+        experienceYears,
+        maxActiveJobs,
         status: (status as TechnicianStatus) || "AVAILABLE",
-        serviceArea: serviceArea?.trim() || null,
-        notes: notes?.trim() || null,
-        avatar: avatar?.trim() || null,
+        serviceArea: serviceArea || null,
+        notes: notes || null,
+        avatar: avatar || null,
       },
     });
 

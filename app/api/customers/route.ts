@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/audit-logger";
+import { CustomerCreateSchema, validateSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 
@@ -209,56 +210,59 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, company, email, phone, address, city, notes } = body;
 
-    // Server-side validation
-    const errors: Record<string, string> = {};
-
-    if (!name || typeof name !== "string" || name.trim().length < 2) {
-      errors.name = "Customer name must be at least 2 characters.";
+    // 1. Zod Schema Validation
+    const validation = validateSchema(CustomerCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
     }
 
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = "A valid email address is required (e.g. name@company.com).";
-    }
+    const { name, company, email, phone, address, city, notes } = validation.data;
 
-    if (!phone || typeof phone !== "string" || phone.trim().length < 6) {
-      errors.phone = "A valid phone number is required (min 6 digits).";
-    }
-
-    if (!address || typeof address !== "string" || address.trim().length < 3) {
-      errors.address = "Street address is required (min 3 characters).";
-    }
-
-    if (!city || typeof city !== "string" || city.trim().length < 2) {
-      errors.city = "City is required.";
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
-    }
-
-    // Check email uniqueness
-    const existing = await prisma.customer.findUnique({
-      where: { email: email.trim().toLowerCase() },
+    // 2. Duplicate Detection: Check Email Collision
+    const existingEmail = await prisma.customer.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
     });
 
-    if (existing) {
+    if (existingEmail) {
       return NextResponse.json(
-        { error: "A customer with this email address already exists.", errors: { email: "Email already registered." } },
+        {
+          error: `A customer with email "${email}" already exists (${existingEmail.name}${existingEmail.company ? ` - ${existingEmail.company}` : ""}).`,
+          errors: { email: "This email address is already registered to an existing customer." },
+        },
         { status: 409 }
       );
     }
 
+    // 3. Duplicate Detection: Check Exact Phone + Company match
+    if (phone && company) {
+      const existingPhoneCompany = await prisma.customer.findFirst({
+        where: {
+          phone: { equals: phone, mode: "insensitive" },
+          company: { equals: company, mode: "insensitive" },
+        },
+      });
+
+      if (existingPhoneCompany) {
+        return NextResponse.json(
+          {
+            error: `A customer for "${company}" with phone "${phone}" already exists (${existingPhoneCompany.name}).`,
+            errors: { phone: "A customer account already exists with this company and phone number combination." },
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const customer = await prisma.customer.create({
       data: {
-        name: name.trim(),
-        company: company?.trim() || null,
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        address: address.trim(),
-        city: city.trim(),
-        notes: notes?.trim() || null,
+        name,
+        company: company || null,
+        email: email.toLowerCase(),
+        phone: phone || null,
+        address,
+        city,
+        notes: notes || null,
       },
       include: {
         _count: {

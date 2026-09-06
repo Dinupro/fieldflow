@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, UserRole } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/audit-logger";
+import { validateSchema, UserRoleUpdateSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,13 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { role, technicianId, name } = body;
+
+    const validation = validateSchema(UserRoleUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
+    }
+
+    const { role, technicianId, name } = validation.data;
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
@@ -37,12 +44,7 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Validate role
-    const validRoles: UserRole[] = ["ADMIN", "DISPATCHER", "TECHNICIAN"];
-    let newRole: UserRole = (targetUser.role as UserRole) || "DISPATCHER";
-    if (role && validRoles.includes(role)) {
-      newRole = role as UserRole;
-    }
+    const newRole: UserRole = role;
 
     // Prevent demoting the last remaining admin
     if (targetUser.role === "ADMIN" && newRole !== "ADMIN") {

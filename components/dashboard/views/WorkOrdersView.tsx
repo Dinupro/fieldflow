@@ -937,11 +937,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       {toast && (
         <div className="fixed top-20 right-6 z-50 max-w-md w-full animate-fadeIn shadow-2xl">
           <div
-            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${
-              toast.type === "success"
+            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${toast.type === "success"
                 ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
                 : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
-            }`}
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -969,11 +968,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               {role === "TECHNICIAN" ? "My Assigned Work Orders" : "Work Order Management"}
             </h2>
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                role === "TECHNICIAN"
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${role === "TECHNICIAN"
                   ? "bg-emerald-100 text-emerald-700 border-emerald-200"
                   : "bg-blue-100 text-blue-700 border-blue-200"
-              }`}
+                }`}
             >
               {role === "TECHNICIAN" ? "Technician Execution Portal" : "Full Lifecycle Control"}
             </span>
@@ -1109,38 +1107,34 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
 
         {/* Overdue Alert */}
         <div
-          className={`p-4 rounded-2xl border shadow-xs space-y-1.5 ${
-            stats.overdueCount > 0
+          className={`p-4 rounded-2xl border shadow-xs space-y-1.5 ${stats.overdueCount > 0
               ? "bg-rose-50/70 border-rose-200"
               : "bg-white border-slate-200"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between text-slate-500">
             <span className={`text-[11px] font-bold uppercase tracking-wider ${stats.overdueCount > 0 ? "text-rose-700" : ""}`}>
               Overdue SLAs
             </span>
             <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                stats.overdueCount > 0
+              className={`w-7 h-7 rounded-lg flex items-center justify-center ${stats.overdueCount > 0
                   ? "bg-rose-100 text-rose-600 animate-pulse"
                   : "bg-emerald-50 text-emerald-600"
-              }`}
+                }`}
             >
               <AlertCircle className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span
-              className={`text-2xl font-black ${
-                stats.overdueCount > 0 ? "text-rose-600" : "text-slate-800"
-              }`}
+              className={`text-2xl font-black ${stats.overdueCount > 0 ? "text-rose-600" : "text-slate-800"
+                }`}
             >
               {stats.overdueCount}
             </span>
             <span
-              className={`text-[10px] font-bold ${
-                stats.overdueCount > 0 ? "text-rose-700" : "text-emerald-600"
-              }`}
+              className={`text-[10px] font-bold ${stats.overdueCount > 0 ? "text-rose-700" : "text-emerald-600"
+                }`}
             >
               {stats.overdueCount > 0 ? "Urgent Attention" : "On Schedule"}
             </span>
@@ -1196,11 +1190,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     setStatusFilter(tab.value);
                     setPage(1);
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
-                    statusFilter === tab.value
+                  className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${statusFilter === tab.value
                       ? `${tab.color || "bg-white text-slate-900"} text-white shadow-xs`
                       : "text-slate-600 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -1234,7 +1227,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     setCustomerFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-[150px] truncate"
+                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
                 >
                   <option value="all">All Customers</option>
                   {customersList.map((c) => (
@@ -1255,7 +1248,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     setTechnicianFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-[150px] truncate"
+                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
                 >
                   <option value="all">All Technicians</option>
                   <option value="unassigned">Unassigned Only</option>
@@ -1381,7 +1374,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       </div>
 
       {/* Main Table */}
-      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden max-h-[700px] overflow-y-auto">
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden max-h-175 overflow-y-auto">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 border-b border-slate-200 shadow-xs">
@@ -1474,8 +1467,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                           {role === "TECHNICIAN"
                             ? "You do not have any work orders matching the selected filter criteria."
                             : debouncedSearch || statusFilter !== "all" || priorityFilter !== "all"
-                            ? "No work orders match the current filter criteria. Try clearing search filters."
-                            : "Start dispatching by creating the first field service work order."}
+                              ? "No work orders match the current filter criteria. Try clearing search filters."
+                              : "Start dispatching by creating the first field service work order."}
                         </p>
                       </div>
                       {role !== "TECHNICIAN" && (
@@ -1551,13 +1544,12 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                                     .slice(0, 2)}
                                 </div>
                                 <span
-                                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                                    wo.technician.status === "AVAILABLE"
+                                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${wo.technician.status === "AVAILABLE"
                                       ? "bg-emerald-500"
                                       : wo.technician.status === "BUSY"
-                                      ? "bg-amber-500"
-                                      : "bg-slate-400"
-                                  }`}
+                                        ? "bg-amber-500"
+                                        : "bg-slate-400"
+                                    }`}
                                 />
                               </div>
                               <div className="min-w-0">
@@ -1847,11 +1839,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       {showEllipsis && <span className="px-1 text-slate-400">...</span>}
                       <button
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          pagination.page === pageNum
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${pagination.page === pageNum
                             ? "bg-blue-600 text-white shadow-xs"
                             : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -1905,9 +1896,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                   placeholder="e.g. Cisco Catalyst Core Switch Migration & Splicing"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                    formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
                 {formErrors.title && <span className="text-[11px] text-rose-600 block">{formErrors.title}</span>}
               </div>
@@ -1921,9 +1911,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     required
                     value={formData.customerId}
                     onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${
-                      formErrors.customerId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${formErrors.customerId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   >
                     <option value="">Select customer...</option>
                     {customersList.map((c) => (
@@ -1943,9 +1932,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                   <select
                     value={formData.technicianId}
                     onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${
-                      formErrors.technicianId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${formErrors.technicianId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   >
                     <option value="">Leave Unassigned (Open Pool)</option>
                     <optgroup label="Available Now (Recommended)">
@@ -2018,9 +2006,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                   placeholder="Detailed breakdown of technician requirements, site access instructions, equipment IDs..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all resize-none ${
-                    formErrors.description ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all resize-none ${formErrors.description ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
                 {formErrors.description && (
                   <span className="text-[11px] text-rose-600 block">{formErrors.description}</span>
@@ -2102,9 +2089,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                    formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
                 {formErrors.title && <span className="text-[11px] text-rose-600 block">{formErrors.title}</span>}
               </div>
@@ -2415,7 +2401,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block flex items-center justify-between">
+                <label className="font-bold text-slate-700 block items-center justify-between">
                   <span>Technician Resolution & Completion Notes *</span>
                   <span className="text-[10px] text-emerald-700 font-semibold">Mandatory (min 5 chars)</span>
                 </label>
@@ -2650,7 +2636,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             <div className="grid sm:grid-cols-2 gap-3.5">
               {/* Customer Box */}
               <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block items-center gap-1">
                   <Building2 className="w-3 h-3 text-slate-400" />
                   Client Information
                 </span>
@@ -2682,7 +2668,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
 
               {/* Technician Box */}
               <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block items-center gap-1">
                   <Wrench className="w-3 h-3 text-slate-400" />
                   Assigned Field Engineer
                 </span>
@@ -2712,11 +2698,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       <p className="flex items-center gap-1.5">
                         <span className="text-slate-400">Status:</span>
                         <span
-                          className={`font-bold ${
-                            selectedWorkOrder.technician.status === "AVAILABLE"
+                          className={`font-bold ${selectedWorkOrder.technician.status === "AVAILABLE"
                               ? "text-emerald-600"
                               : "text-amber-600"
-                          }`}
+                            }`}
                         >
                           {selectedWorkOrder.technician.status}
                         </span>

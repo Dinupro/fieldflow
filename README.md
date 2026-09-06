@@ -94,7 +94,14 @@ The application includes pre-seeded accounts in Neon PostgreSQL for immediate ev
 
 > **Tip**: The [Login Page](app/login/page.tsx) provides a **1-Click Instant Demo Login** panel to sign in as any role with a single click.
 
-### 🛡️ Secure Authentication & Session Management
+### 🛡️ Schema Validation & Duplicate Prevention (Zod Engine)
+- **Strict Server-Side Input Validation**: All mutation endpoints (`/api/customers`, `/api/technicians`, `/api/work-orders`, `/api/users/[id]`) validate payloads via modular Zod schemas (`lib/validations/`).
+- **Standardized Field Error Architecture**: Returns structured `{ error: string, errors: Record<string, string> }` responses with HTTP `400 Bad Request` or `409 Conflict`, mapping directly to UI input fields.
+- **Intelligent Duplicate Prevention**:
+  - **Customers**: Prevents duplicate email registrations and matching phone + company combinations.
+  - **Technicians**: Rejects collision on technician email or phone numbers across active rosters.
+  - **Work Orders**: Detects and rejects duplicate active orders (`OPEN`, `ASSIGNED`, `ACCEPTED`, `IN_PROGRESS`, `PAUSED`) with identical titles for the same client.
+- **Enhanced UX State Feedback**: Rich animated skeleton loaders (`WorkOrderCardSkeleton`, `TechnicianCardSkeleton`, `MetricCardSkeleton`, `TableSkeleton`), optimistic status updates, and interactive empty states (`EmptyState`) with 1-click filter reset triggers.
 - Multi-factor ready email/password authentication powered by **Better Auth**.
 - Secure, encrypted HTTP-only session cookies (`better-auth.session_token`).
 - Route middleware protection guarding `/dashboard`, `/customers`, `/technicians`, and `/work-orders`.

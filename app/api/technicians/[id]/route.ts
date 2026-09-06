@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/audit-logger";
+import { TechnicianUpdateSchema, validateSchema } from "@/lib/validations";
 
 type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
@@ -138,21 +139,6 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const {
-      name,
-      email,
-      phone,
-      specialization,
-      skills,
-      certifications,
-      rating,
-      experienceYears,
-      maxActiveJobs,
-      status,
-      serviceArea,
-      notes,
-      avatar,
-    } = body;
 
     const existingTech = await prisma.technician.findUnique({
       where: { id },
@@ -170,37 +156,33 @@ export async function PUT(
       );
     }
 
-    const errors: Record<string, string> = {};
-
-    if (!name || typeof name !== "string" || name.trim().length < 2) {
-      errors.name = "Technician full name is required (min 2 characters).";
+    // 1. Zod Schema Validation
+    const validation = validateSchema(TechnicianUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
     }
 
-    if (email && typeof email === "string" && email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        errors.email = "Please provide a valid email address.";
-      }
-    }
+    const {
+      name,
+      email,
+      phone,
+      specialization,
+      skills,
+      certifications,
+      rating,
+      experienceYears,
+      maxActiveJobs,
+      status,
+      serviceArea,
+      notes,
+      avatar,
+    } = validation.data;
 
-    if (status && !["AVAILABLE", "BUSY", "OFF"].includes(status)) {
-      errors.status = "Invalid availability status. Must be AVAILABLE, BUSY, or OFF.";
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json(
-        { error: "Validation failed", errors },
-        { status: 400 }
-      );
-    }
-
-    const cleanEmail = email?.trim() || null;
-
-    // Check email uniqueness against other technicians
-    if (cleanEmail) {
+    // 2. Check email uniqueness against other technicians
+    if (email && email.toLowerCase() !== (existingTech.email || "").toLowerCase()) {
       const existing = await prisma.technician.findFirst({
         where: {
-          email: { equals: cleanEmail, mode: "insensitive" },
+          email: { equals: email, mode: "insensitive" },
           id: { not: id },
         },
       });
@@ -208,51 +190,48 @@ export async function PUT(
         return NextResponse.json(
           {
             error: "Email conflict",
-            errors: { email: "Another technician is already registered with this email address." },
+            errors: { email: `Another technician (${existing.name}) is already registered with this email address.` },
           },
           { status: 409 }
         );
       }
     }
 
-    // Process skills
-    let processedSkills: string[] = [];
-    if (Array.isArray(skills)) {
-      processedSkills = skills.map((s) => String(s).trim()).filter(Boolean);
-    } else if (typeof skills === "string") {
-      processedSkills = skills
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    // Process certifications
-    let processedCerts: string[] = [];
-    if (Array.isArray(certifications)) {
-      processedCerts = certifications.map((c) => String(c).trim()).filter(Boolean);
-    } else if (typeof certifications === "string") {
-      processedCerts = certifications
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean);
+    // 3. Check phone uniqueness against other technicians
+    if (phone && phone !== existingTech.phone) {
+      const existingPhone = await prisma.technician.findFirst({
+        where: {
+          phone: { equals: phone, mode: "insensitive" },
+          id: { not: id },
+        },
+      });
+      if (existingPhone) {
+        return NextResponse.json(
+          {
+            error: "Phone conflict",
+            errors: { phone: `Another technician (${existingPhone.name}) is already registered with this phone number.` },
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const updated = await prisma.technician.update({
       where: { id },
       data: {
-        name: name.trim(),
-        email: cleanEmail,
-        phone: phone?.trim() || null,
-        specialization: specialization?.trim() || null,
-        skills: processedSkills,
-        certifications: processedCerts,
-        rating: typeof rating === "number" ? Math.min(5, Math.max(1, rating)) : existingTech.rating,
-        experienceYears: typeof experienceYears === "number" ? Math.max(0, experienceYears) : existingTech.experienceYears,
-        maxActiveJobs: typeof maxActiveJobs === "number" ? Math.max(1, maxActiveJobs) : existingTech.maxActiveJobs,
+        name: name !== undefined ? name : existingTech.name,
+        email: email !== undefined ? (email || null) : existingTech.email,
+        phone: phone !== undefined ? (phone || null) : existingTech.phone,
+        specialization: specialization !== undefined ? (specialization || null) : existingTech.specialization,
+        skills: skills !== undefined ? skills : existingTech.skills,
+        certifications: certifications !== undefined ? certifications : existingTech.certifications,
+        rating: rating !== undefined ? Math.min(5, Math.max(1, rating)) : existingTech.rating,
+        experienceYears: experienceYears !== undefined ? Math.max(0, experienceYears) : existingTech.experienceYears,
+        maxActiveJobs: maxActiveJobs !== undefined ? Math.max(1, maxActiveJobs) : existingTech.maxActiveJobs,
         status: (status as TechnicianStatus) || existingTech.status,
-        serviceArea: serviceArea?.trim() || null,
-        notes: notes?.trim() || null,
-        avatar: avatar?.trim() || null,
+        serviceArea: serviceArea !== undefined ? (serviceArea || null) : existingTech.serviceArea,
+        notes: notes !== undefined ? (notes || null) : existingTech.notes,
+        avatar: avatar !== undefined ? (avatar || null) : existingTech.avatar,
       },
     });
 
@@ -270,8 +249,8 @@ export async function PUT(
       metadata: {
         previousStatus: existingTech.status,
         newStatus: updated.status,
-        skillsCount: processedSkills.length,
-        certificationsCount: processedCerts.length,
+        skillsCount: updated.skills.length,
+        certificationsCount: updated.certifications.length,
         experienceYears: updated.experienceYears,
       },
     });

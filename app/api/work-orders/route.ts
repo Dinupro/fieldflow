@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { triggerLifecycleNotification } from "@/lib/notifications";
 import { logActivity } from "@/lib/audit-logger";
+import { WorkOrderCreateSchema, validateSchema } from "@/lib/validations";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType =
@@ -272,6 +273,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // 1. Zod Schema Validation
+    const validation = validateSchema(WorkOrderCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
+    }
+
     const {
       title,
       description,
@@ -281,57 +289,66 @@ export async function POST(req: NextRequest) {
       status,
       scheduledAt,
       completionNotes,
-    } = body;
+    } = validation.data;
 
     const errors: Record<string, string> = {};
 
-    if (!title || typeof title !== "string" || title.trim().length < 3) {
-      errors.title = "Work order title is required (min 3 characters).";
+    // 2. Validate Customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Selected customer does not exist.", errors: { customerId: "Customer not found." } },
+        { status: 404 }
+      );
     }
 
-    if (!description || typeof description !== "string" || description.trim().length < 3) {
-      errors.description = "Work order description is required.";
+    // 3. Duplicate Order Detection: Prevent duplicate open job with same title for customer
+    const existingDuplicate = await prisma.workOrder.findFirst({
+      where: {
+        customerId,
+        title: { equals: title, mode: "insensitive" },
+        status: { in: ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"] },
+      },
+    });
+
+    if (existingDuplicate) {
+      return NextResponse.json(
+        {
+          error: `An active work order with the title "${title}" already exists for customer "${customer.name}".`,
+          errors: { title: "A duplicate active work order is currently open for this customer." },
+        },
+        { status: 409 }
+      );
     }
 
-    if (!customerId || typeof customerId !== "string") {
-      errors.customerId = "Customer selection is required.";
-    }
+    const cleanTechId = technicianId || null;
+    let finalStatus: WorkOrderStatusType = cleanTechId ? "ASSIGNED" : (status as WorkOrderStatusType) || "OPEN";
+    const finalPriority: PriorityType = priority as PriorityType;
 
-    const cleanTechId = technicianId && typeof technicianId === "string" && technicianId.trim() !== "" ? technicianId.trim() : null;
-    let finalStatus: WorkOrderStatusType = cleanTechId ? "ASSIGNED" : "OPEN";
-    const validPriorities: PriorityType[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
-    const finalPriority: PriorityType = validPriorities.includes(priority) ? priority : "MEDIUM";
-
-    // Validate Customer exists
-    if (customerId) {
-      const customerExists = await prisma.customer.findUnique({
-        where: { id: customerId },
-      });
-      if (!customerExists) {
-        errors.customerId = "Selected customer does not exist.";
-      }
-    }
-
-    // Validate Technician and availability rules if technicianId provided
+    // 4. Validate Technician & Availability
     if (cleanTechId) {
       const technician = await prisma.technician.findUnique({
         where: { id: cleanTechId },
       });
 
       if (!technician) {
-        errors.technicianId = "Selected technician does not exist.";
+        return NextResponse.json(
+          { error: "Selected technician does not exist.", errors: { technicianId: "Technician not found." } },
+          { status: 404 }
+        );
       } else if (technician.status === "OFF") {
-        errors.technicianId = `Cannot assign technician "${technician.name}": Technician is currently Offline / Off-Duty.`;
+        return NextResponse.json(
+          {
+            error: `Cannot assign technician "${technician.name}": Technician is currently Offline / Off-Duty.`,
+            errors: { technicianId: "Technician is currently Offline/Off-Duty." },
+          },
+          { status: 400 }
+        );
       } else {
         finalStatus = "ASSIGNED";
       }
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json(
-        { error: "Validation failed", errors },
-        { status: 400 }
-      );
     }
 
     // Parse scheduled date
@@ -346,14 +363,14 @@ export async function POST(req: NextRequest) {
     // Create WorkOrder and StatusLog
     const created = await prisma.workOrder.create({
       data: {
-        title: title.trim(),
-        description: description.trim(),
+        title,
+        description,
         customerId,
         technicianId: cleanTechId,
         priority: finalPriority,
         status: finalStatus,
         scheduledAt: parsedScheduledAt,
-        completionNotes: completionNotes?.trim() || null,
+        completionNotes: completionNotes || null,
         completedAt: null,
       },
       include: {

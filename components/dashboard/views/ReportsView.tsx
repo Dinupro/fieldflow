@@ -255,11 +255,10 @@ export default function ReportsView() {
               <button
                 key={tab.value}
                 onClick={() => setTimeRange(tab.value as any)}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  timeRange === tab.value
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${timeRange === tab.value
                     ? "bg-white text-slate-900 shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -418,11 +417,11 @@ export default function ReportsView() {
                     <div className="w-full flex items-end justify-center gap-1 sm:gap-2 h-full pb-1">
                       <div
                         style={{ height: `${createdHeight}%` }}
-                        className="w-full max-w-[18px] bg-linear-to-t from-blue-600 to-indigo-500 rounded-t-md transition-all group-hover:brightness-110 shadow-xs"
+                        className="w-full max-w-4.5 bg-linear-to-t from-blue-600 to-indigo-500 rounded-t-md transition-all group-hover:brightness-110 shadow-xs"
                       />
                       <div
                         style={{ height: `${completedHeight}%` }}
-                        className="w-full max-w-[18px] bg-linear-to-t from-emerald-500 to-teal-400 rounded-t-md transition-all group-hover:brightness-110 shadow-xs"
+                        className="w-full max-w-4.5 bg-linear-to-t from-emerald-500 to-teal-400 rounded-t-md transition-all group-hover:brightness-110 shadow-xs"
                       />
                     </div>
 
@@ -656,7 +655,7 @@ export default function ReportsView() {
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-[450px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-112.5 overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 border-b border-slate-200">
               <tr className="text-[10px] font-bold uppercase tracking-wider text-slate-500">

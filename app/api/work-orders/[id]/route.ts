@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { triggerLifecycleNotification, LifecycleEvent } from "@/lib/notifications";
 import { logActivity } from "@/lib/audit-logger";
+import { WorkOrderUpdateSchema, validateSchema } from "@/lib/validations";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type WorkOrderStatusType =

@@ -655,11 +655,10 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
       {toast && (
         <div className="fixed top-20 right-6 z-50 max-w-md w-full animate-fadeIn shadow-2xl">
           <div
-            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${
-              toast.type === "success"
+            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${toast.type === "success"
                 ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
                 : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
-            }`}
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -829,17 +828,16 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                     setStatusFilter(s);
                     setPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    statusFilter === s
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${statusFilter === s
                       ? s === "AVAILABLE"
                         ? "bg-emerald-600 text-white shadow-xs"
                         : s === "BUSY"
-                        ? "bg-amber-600 text-white shadow-xs"
-                        : s === "OFF"
-                        ? "bg-slate-700 text-white shadow-xs"
-                        : "bg-blue-600 text-white shadow-xs"
+                          ? "bg-amber-600 text-white shadow-xs"
+                          : s === "OFF"
+                            ? "bg-slate-700 text-white shadow-xs"
+                            : "bg-blue-600 text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   {s === "ALL" ? "All" : s === "AVAILABLE" ? "Available" : s === "BUSY" ? "Busy" : "Offline"}
                 </button>
@@ -848,11 +846,10 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
 
             <button
               onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-              className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                showFiltersPanel || hasActiveFilterSet
+              className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${showFiltersPanel || hasActiveFilterSet
                   ? "bg-blue-50 border-blue-200 text-blue-700"
                   : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-              }`}
+                }`}
             >
               <Filter className="w-3.5 h-3.5" />
               <span>Filters</span>
@@ -1095,7 +1092,7 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                       {/* Technician & Expertise */}
                       <td className="py-3.5 px-4 sm:px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-700 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                          <div className="w-10 h-10 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-700 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
                             {initials}
                           </div>
                           <div className="min-w-0">
@@ -1132,22 +1129,20 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                               handleQuickStatusChange(tech.id, nextStatus);
                             }}
                             title={role !== "TECHNICIAN" ? "Click to toggle availability status" : "Availability status"}
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 ${
-                              tech.status === "AVAILABLE"
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 ${tech.status === "AVAILABLE"
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                                 : tech.status === "BUSY"
-                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-                            } ${role !== "TECHNICIAN" ? "cursor-pointer" : "cursor-default"}`}
+                                  ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                              } ${role !== "TECHNICIAN" ? "cursor-pointer" : "cursor-default"}`}
                           >
                             <span
-                              className={`w-2 h-2 rounded-full ${
-                                tech.status === "AVAILABLE"
+                              className={`w-2 h-2 rounded-full ${tech.status === "AVAILABLE"
                                   ? "bg-emerald-500 animate-pulse"
                                   : tech.status === "BUSY"
-                                  ? "bg-amber-500"
-                                  : "bg-slate-400"
-                              }`}
+                                    ? "bg-amber-500"
+                                    : "bg-slate-400"
+                                }`}
                             />
                             <span>{tech.status}</span>
                             {role !== "TECHNICIAN" && (
@@ -1165,13 +1160,12 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                               {activeCount} / {maxCap} Jobs
                             </span>
                             <span
-                              className={`text-[10px] font-bold ${
-                                workloadPct >= 100
+                              className={`text-[10px] font-bold ${workloadPct >= 100
                                   ? "text-rose-600"
                                   : workloadPct >= 66
-                                  ? "text-amber-600"
-                                  : "text-emerald-600"
-                              }`}
+                                    ? "text-amber-600"
+                                    : "text-emerald-600"
+                                }`}
                             >
                               {workloadPct}%
                             </span>
@@ -1179,13 +1173,12 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                           {/* Progress Bar */}
                           <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                workloadPct >= 100
+                              className={`h-full rounded-full transition-all duration-500 ${workloadPct >= 100
                                   ? "bg-rose-500"
                                   : workloadPct >= 66
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500"
-                              }`}
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                }`}
                               style={{ width: `${workloadPct}%` }}
                             />
                           </div>
@@ -1327,11 +1320,10 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                       {showEllipsis && <span className="px-1 text-slate-400">...</span>}
                       <button
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          pagination.page === pageNum
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${pagination.page === pageNum
                             ? "bg-blue-600 text-white shadow-xs"
                             : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -1386,9 +1378,8 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                     placeholder="e.g. Alex Henderson"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                      formErrors.name ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.name ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   />
                   {formErrors.name && <span className="text-[11px] text-rose-600 block">{formErrors.name}</span>}
                 </div>
@@ -1420,9 +1411,8 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                     placeholder="technician@fieldflow.io"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                      formErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   />
                   {formErrors.email && <span className="text-[11px] text-rose-600 block">{formErrors.email}</span>}
                 </div>
@@ -1699,9 +1689,8 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                      formErrors.name ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.name ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   />
                   {formErrors.name && <span className="text-[11px] text-rose-600 block">{formErrors.name}</span>}
                 </div>
@@ -1730,9 +1719,8 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${
-                      formErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.email ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
+                      }`}
                   />
                   {formErrors.email && <span className="text-[11px] text-rose-600 block">{formErrors.email}</span>}
                 </div>
@@ -1940,7 +1928,7 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
             {/* Modal Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-700 text-white font-black text-lg flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-700 text-white font-black text-lg flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
                   {selectedTechnician.name
                     .split(" ")
                     .map((n) => n[0])
@@ -1956,13 +1944,12 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                       <span>{selectedTechnician.rating ?? 4.9} Rating</span>
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                        selectedTechnician.status === "AVAILABLE"
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${selectedTechnician.status === "AVAILABLE"
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : selectedTechnician.status === "BUSY"
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
-                          : "bg-slate-100 text-slate-700 border-slate-200"
-                      }`}
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}
                     >
                       {selectedTechnician.status}
                     </span>
@@ -2126,11 +2113,10 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setProfileActiveTab("active")}
-                    className={`px-3.5 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
-                      profileActiveTab === "active"
+                    className={`px-3.5 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${profileActiveTab === "active"
                         ? "bg-amber-100 text-amber-900 shadow-xs"
                         : "text-slate-500 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     In-Flight Assignments (
                     {selectedTechnician.activeWorkOrders?.length ??
@@ -2142,11 +2128,10 @@ export default function TechniciansView({ role = "DISPATCHER" }: TechniciansView
 
                   <button
                     onClick={() => setProfileActiveTab("completed")}
-                    className={`px-3.5 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
-                      profileActiveTab === "completed"
+                    className={`px-3.5 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${profileActiveTab === "completed"
                         ? "bg-emerald-100 text-emerald-900 shadow-xs"
                         : "text-slate-500 hover:text-slate-900"
-                    }`}
+                      }`}
                   >
                     Resolved Jobs History (
                     {selectedTechnician.completedWorkOrders?.length ??

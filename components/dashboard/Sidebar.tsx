@@ -209,9 +209,8 @@ export default function Sidebar({
 
       {/* Main Sidebar Aside */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-20" : "w-64"
-        } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"
+          } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         {/* Brand Header */}
         <div className="h-18 px-4 flex items-center justify-between border-b border-slate-800/80">
@@ -219,7 +218,7 @@ export default function Sidebar({
             href="/"
             className="flex items-center gap-3 group overflow-hidden"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform shrink-0">
               <Wrench className="w-5 h-5 transform -rotate-45" />
             </div>
             {!isCollapsed && (
@@ -234,8 +233,8 @@ export default function Sidebar({
                   {role === "ADMIN"
                     ? "Admin Console"
                     : role === "TECHNICIAN"
-                    ? "Technician Mobile"
-                    : "Enterprise Dispatch"}
+                      ? "Technician Mobile"
+                      : "Enterprise Dispatch"}
                 </span>
               </div>
             )}
@@ -274,17 +273,15 @@ export default function Sidebar({
                     key={item.key}
                     type="button"
                     onClick={() => handleNavClick(item.key)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative cursor-pointer ${
-                      isActive
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 font-bold"
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative cursor-pointer ${isActive
+                        ? "bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25 font-bold"
                         : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
-                    } ${isCollapsed ? "justify-center" : ""}`}
+                      } ${isCollapsed ? "justify-center" : ""}`}
                     title={isCollapsed ? item.label : undefined}
                   >
                     <Icon
-                      className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                        isActive ? "text-white" : "text-slate-400 group-hover:text-blue-400"
-                      }`}
+                      className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-slate-400 group-hover:text-blue-400"
+                        }`}
                     />
 
                     {!isCollapsed && (
@@ -292,11 +289,10 @@ export default function Sidebar({
                         <span className="truncate flex-1 text-left">{item.label}</span>
                         {item.badge && (
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
-                              isActive
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${isActive
                                 ? "bg-white/20 text-white border-white/30"
                                 : item.badgeColor || "bg-slate-800 text-slate-300 border-slate-700"
-                            }`}
+                              }`}
                           >
                             {item.badge}
                           </span>
@@ -314,9 +310,8 @@ export default function Sidebar({
         <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 space-y-2">
           {/* Live Sync Status */}
           <div
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 border border-slate-750 text-[11px] text-slate-400 ${
-              isCollapsed ? "justify-center" : ""
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/40 border border-slate-750 text-[11px] text-slate-400 ${isCollapsed ? "justify-center" : ""
+              }`}
           >
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -333,9 +328,8 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onLogoutClick}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all group cursor-pointer ${
-              isCollapsed ? "justify-center" : ""
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all group cursor-pointer ${isCollapsed ? "justify-center" : ""
+              }`}
             title={isCollapsed ? "Sign Out" : undefined}
           >
             <LogOut className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/audit-logger";
+import { CustomerUpdateSchema, validateSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 
@@ -114,34 +115,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, company, email, phone, address, city, notes } = body;
 
-    // Validation
-    const errors: Record<string, string> = {};
-
-    if (!name || typeof name !== "string" || name.trim().length < 2) {
-      errors.name = "Customer name must be at least 2 characters.";
+    // 1. Zod Schema Validation
+    const validation = validateSchema(CustomerUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(validation.response, { status: 400 });
     }
 
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = "A valid email address is required (e.g. name@company.com).";
-    }
-
-    if (!phone || typeof phone !== "string" || phone.trim().length < 6) {
-      errors.phone = "A valid phone number is required (min 6 digits).";
-    }
-
-    if (!address || typeof address !== "string" || address.trim().length < 3) {
-      errors.address = "Street address is required (min 3 characters).";
-    }
-
-    if (!city || typeof city !== "string" || city.trim().length < 2) {
-      errors.city = "City is required.";
-    }
-
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
-    }
+    const { name, company, email, phone, address, city, notes } = validation.data;
 
     // Check if customer exists
     const existing = await prisma.customer.findUnique({
@@ -152,14 +133,20 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
-    // Check email uniqueness if email changed
-    if (email.trim().toLowerCase() !== existing.email.toLowerCase()) {
-      const emailTaken = await prisma.customer.findUnique({
-        where: { email: email.trim().toLowerCase() },
+    // Check email uniqueness if email provided and changed
+    if (email && email.toLowerCase() !== existing.email.toLowerCase()) {
+      const emailTaken = await prisma.customer.findFirst({
+        where: {
+          email: { equals: email, mode: "insensitive" },
+          id: { not: id },
+        },
       });
-      if (emailTaken && emailTaken.id !== id) {
+      if (emailTaken) {
         return NextResponse.json(
-          { error: "A customer with this email address already exists.", errors: { email: "Email already in use." } },
+          {
+            error: "A customer with this email address already exists.",
+            errors: { email: "Email already in use by another customer." },
+          },
           { status: 409 }
         );
       }
@@ -168,13 +155,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     const updated = await prisma.customer.update({
       where: { id },
       data: {
-        name: name.trim(),
-        company: company?.trim() || null,
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        address: address.trim(),
-        city: city.trim(),
-        notes: notes?.trim() || null,
+        name: name !== undefined ? name : existing.name,
+        company: company !== undefined ? (company || null) : existing.company,
+        email: email !== undefined ? email.toLowerCase() : existing.email,
+        phone: phone !== undefined ? (phone || null) : existing.phone,
+        address: address !== undefined ? address : existing.address,
+        city: city !== undefined ? city : existing.city,
+        notes: notes !== undefined ? (notes || null) : existing.notes,
       },
       include: {
         _count: {
