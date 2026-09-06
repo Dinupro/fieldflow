@@ -28,6 +28,6 @@ export const auth = betterAuth({
     },
   },
 
-  secret: process.env.BETTER_AUTH_SECRET || "346b55455e20bdcaab06f85442f20bca0c9b5785d1129cde2caaa112568d967f",
+  secret: process.env.BETTER_AUTH_SECRET || "default_dev_secret_set_in_env_for_production",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });

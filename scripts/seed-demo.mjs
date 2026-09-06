@@ -21,7 +21,7 @@ async function seed() {
 
     await client.query("BEGIN");
 
-    const defaultPassword = "password123";
+    const defaultPassword = process.env.DEMO_USER_PASSWORD || "password123";
     const hashedPassword = await hashPassword(defaultPassword);
 
     console.log("Hashed demo password successfully.");
@@ -54,14 +54,14 @@ async function seed() {
 
       if (existingAccount.rows.length > 0) {
         await client.query(
-          'UPDATE "account" SET password = $1, "updatedAt" = NOW() WHERE id = $2',
-          [hashedPassword, existingAccount.rows[0].id]
+          'UPDATE "account" SET password = $1, issuer = $2, "accountId" = $3, "updatedAt" = NOW() WHERE id = $4',
+          [hashedPassword, "local:credential", userId, existingAccount.rows[0].id]
         );
       } else {
         const accountId = randomUUID();
         await client.query(
-          'INSERT INTO "account" (id, "userId", "accountId", "providerId", password, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
-          [accountId, userId, userId, "credential", hashedPassword]
+          'INSERT INTO "account" (id, "userId", "accountId", "providerId", issuer, password, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
+          [accountId, userId, userId, "credential", "local:credential", hashedPassword]
         );
       }
 
