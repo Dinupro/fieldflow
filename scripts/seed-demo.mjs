@@ -12,6 +12,13 @@ async function seed() {
   console.log("Connected to PostgreSQL database. Starting seed...");
 
   try {
+    // 0. Ensure Enum and Column DDL Updates (must be outside transaction block in PostgreSQL)
+    await client.query(`ALTER TYPE "WorkOrderStatus" ADD VALUE IF NOT EXISTS 'ACCEPTED'`);
+    await client.query(`ALTER TYPE "WorkOrderStatus" ADD VALUE IF NOT EXISTS 'PAUSED'`);
+    await client.query(`ALTER TYPE "WorkOrderStatus" ADD VALUE IF NOT EXISTS 'CLOSED'`);
+    await client.query(`ALTER TABLE "StatusLog" ADD COLUMN IF NOT EXISTS "notes" TEXT`);
+    console.log("PostgreSQL enum and StatusLog DDL verified and committed.");
+
     await client.query("BEGIN");
 
     const defaultPassword = "password123";
@@ -97,7 +104,7 @@ async function seed() {
       "+1 (512) 555-0144",
       "Fiber & Network Infrastructure",
       ["Fiber Splicing", "CAT6 Cabling", "Cisco CCNA", "OTDR Testing"],
-      "AVAILABLE",
+      "BUSY",
       "Austin Metro & Round Rock",
       "Lead certified field network specialist with 8+ years enterprise cabling experience.",
       techUserId
@@ -118,25 +125,25 @@ async function seed() {
       "elena.rostova@fieldflow.io",
       "Elena Rostova",
       "+1 (713) 555-0199",
-      "Security & Access Control",
-      ["Security & Access Control", "CCTV Systems", "POS Terminal Repair", "Biometrics"],
-      "BUSY",
-      "Houston Downtown & Galleria",
-      "Physical security & electronic access systems expert."
+      "Biomedical & Power Electronics",
+      ["Biomed Calibration", "High Voltage 480V", "UPS Power", "NFPA-99"],
+      "AVAILABLE",
+      "Houston Metro & Medical Center",
+      "Specialist in hospital uninterruptible power systems and clinical imaging hardware."
     );
 
-    const carlosTechId = await upsertTech(
-      "carlos.mendez@fieldflow.io",
-      "Carlos Mendez",
-      "+1 (210) 555-0122",
-      "Electrical & Power Distribution",
-      ["Master Electrician", "PLC Troubleshooting", "OSHA 30", "UPS Power Systems"],
+    const marcusTechId = await upsertTech(
+      "marcus.vance.tech@fieldflow.io",
+      "Marcus Vance",
+      "+1 (512) 555-0177",
+      "Access Control & Security Systems",
+      ["CCTV Surveillance", "HID Access Control", "Milestone VMS", "Fiber Backhaul"],
       "OFF",
-      "San Antonio North",
-      "Industrial high-voltage electrical master technician (Off-Duty today)."
+      "Austin - Central & South",
+      "Master security technician with field license and high-security clearance."
     );
 
-    console.log("Technician roster populated (Devon, Sarah, Elena, Carlos).");
+    console.log("Technicians roster provisioned (Devon Miller, Sarah Jenkins, Elena Rostova, Marcus Vance).");
 
     // 3. Provision Customers in "customer" table
     async function upsertCustomer(email, name, company, phone, address, city, notes) {
@@ -194,7 +201,7 @@ async function seed() {
     console.log("Customer directory seeded (Apex Logistics, Metro Health, Skyline Retail).");
 
     // 4. Provision Work Orders & Status Logs in "WorkOrder" & "StatusLog" tables
-    async function upsertWorkOrder(title, desc, custId, techId, priority, status, schedDate, compDate, notes, changedById) {
+    async function upsertWorkOrder(title, desc, custId, techId, priority, status, schedDate, compDate, notes, logs = []) {
       const existing = await client.query('SELECT id FROM "WorkOrder" WHERE title = $1', [title]);
       let woId;
       if (existing.rows.length > 0) {
@@ -205,6 +212,8 @@ async function seed() {
            WHERE id = $9`,
           [desc, custId, techId, priority, status, schedDate, compDate, notes, woId]
         );
+        // Clear existing status logs to re-insert fresh lifecycle history
+        await client.query('DELETE FROM "StatusLog" WHERE "workOrderId" = $1', [woId]);
       } else {
         woId = randomUUID();
         await client.query(
@@ -212,102 +221,27 @@ async function seed() {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
           [woId, title, desc, custId, techId, priority, status, schedDate, compDate, notes]
         );
-
-        // Create StatusLog history
-        if (status === "OPEN") {
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'OPEN', 'OPEN', NOW())`,
-            [randomUUID(), woId, changedById]
-          );
-        } else if (status === "ASSIGNED") {
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'OPEN', 'ASSIGNED', NOW() - INTERVAL '2 hours')`,
-            [randomUUID(), woId, changedById]
-          );
-        } else if (status === "IN_PROGRESS") {
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'OPEN', 'ASSIGNED', NOW() - INTERVAL '3 hours')`,
-            [randomUUID(), woId, changedById]
-          );
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'ASSIGNED', 'IN_PROGRESS', NOW() - INTERVAL '45 minutes')`,
-            [randomUUID(), woId, changedById]
-          );
-        } else if (status === "COMPLETED") {
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'OPEN', 'ASSIGNED', NOW() - INTERVAL '1 day')`,
-            [randomUUID(), woId, changedById]
-          );
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'ASSIGNED', 'IN_PROGRESS', NOW() - INTERVAL '22 hours')`,
-            [randomUUID(), woId, changedById]
-          );
-          await client.query(
-            `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", "changedAt")
-             VALUES ($1, $2, $3, 'IN_PROGRESS', 'COMPLETED', NOW() - INTERVAL '18 hours')`,
-            [randomUUID(), woId, changedById]
-          );
-        }
       }
+
+      // Insert all StatusLog records
+      for (const log of logs) {
+        await client.query(
+          `INSERT INTO "StatusLog" (id, "workOrderId", "changedById", "fromStatus", "toStatus", notes, "changedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [randomUUID(), woId, log.changedById, log.fromStatus, log.toStatus, log.notes || null, log.changedAt]
+        );
+      }
+
       return woId;
     }
 
-    const schedTomorrow = new Date();
-    schedTomorrow.setDate(schedTomorrow.getDate() + 1);
-    schedTomorrow.setHours(9, 30, 0, 0);
+    const now = new Date();
+    const schedTomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const schedToday = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const compYesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const closedTwoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
-    const schedToday = new Date();
-    schedToday.setHours(8, 0, 0, 0);
-
-    const compYesterday = new Date();
-    compYesterday.setDate(compYesterday.getDate() - 1);
-    compYesterday.setHours(15, 45, 0, 0);
-
-    await upsertWorkOrder(
-      "Emergency Optical Backbone Splicing & Tier-2 OTDR Cert",
-      "Restore severed 96-strand optical trunk line connecting Server Vault 2B to Central Dispatch. Splice ribbon fibers and verify <0.05dB loss.",
-      apexCustId,
-      devonTechId,
-      "URGENT",
-      "ASSIGNED",
-      schedTomorrow,
-      null,
-      null,
-      dispatcherId
-    );
-
-    await upsertWorkOrder(
-      "Point-of-Sale Network Switchover & Cat6A Drop Certifications",
-      "Deploy 12 shielded Cat6A drops across retail counters 1-8. Terminate patch panels and verify Gigabit PoE line resistance.",
-      skylineCustId,
-      devonTechId,
-      "HIGH",
-      "IN_PROGRESS",
-      schedToday,
-      null,
-      null,
-      techUserId
-    );
-
-    await upsertWorkOrder(
-      "Critical Care UPS Power Inverter Failover Calibration",
-      "Conducted primary and secondary inverter transfer tests. Calibrated ATS sensors and validated 12.4kW runtime capacity under peak load.",
-      metroCustId,
-      devonTechId,
-      "MEDIUM",
-      "COMPLETED",
-      compYesterday,
-      compYesterday,
-      "Full load test completed. 4ms ATS transfer latency verified. Digital customer sign-off obtained from Dr. Rachel Vance.",
-      techUserId
-    );
-
+    // 1. OPEN (Created)
     await upsertWorkOrder(
       "Cleanroom Chiller Diagnostics & BAS Sensor Replacement",
       "Inspect rooftop chiller compressor 2, replace failing 4-20mA pressure transducer, and calibrate building automation setpoints.",
@@ -318,11 +252,249 @@ async function seed() {
       schedTomorrow,
       null,
       null,
-      dispatcherId
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "OPEN",
+          notes: "Work order created and placed in unassigned dispatch queue.",
+          changedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 2. ASSIGNED
+    await upsertWorkOrder(
+      "Emergency Optical Backbone Splicing & Tier-2 OTDR Cert",
+      "Restore severed 96-strand optical trunk line connecting Server Vault 2B to Central Dispatch. Splice ribbon fibers and verify <0.05dB loss.",
+      apexCustId,
+      devonTechId,
+      "URGENT",
+      "ASSIGNED",
+      schedTomorrow,
+      null,
+      null,
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "OPEN",
+          notes: "Work order created.",
+          changedAt: new Date(now.getTime() - 6 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Assigned to Devon Miller for optical certification and emergency splicing.",
+          changedAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 3. ACCEPTED
+    await upsertWorkOrder(
+      "Substation SCADA Remote Terminal Unit (RTU) Firmware Flash",
+      "Perform firmware update on Schweitzer Engineering SEL-3530 RTU controller. Backup configuration and verify DNP3 telemetry link.",
+      apexCustId,
+      devonTechId,
+      "HIGH",
+      "ACCEPTED",
+      schedToday,
+      null,
+      null,
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Dispatched to Devon Miller for RTU firmware update.",
+          changedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "ASSIGNED",
+          toStatus: "ACCEPTED",
+          notes: "Work order accepted by Devon Miller. En route to site with necessary cable adapters.",
+          changedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 4. IN_PROGRESS
+    await upsertWorkOrder(
+      "Point-of-Sale Network Switchover & Cat6A Drop Certifications",
+      "Deploy 12 shielded Cat6A drops across retail counters 1-8. Terminate patch panels and verify Gigabit PoE line resistance.",
+      skylineCustId,
+      devonTechId,
+      "HIGH",
+      "IN_PROGRESS",
+      schedToday,
+      null,
+      null,
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Dispatched to Devon Miller.",
+          changedAt: new Date(now.getTime() - 8 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "ASSIGNED",
+          toStatus: "ACCEPTED",
+          notes: "Accepted by technician.",
+          changedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "ACCEPTED",
+          toStatus: "IN_PROGRESS",
+          notes: "On-site arrival confirmed. Terminating switch patch panel in IDF 2.",
+          changedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 5. PAUSED
+    await upsertWorkOrder(
+      "Medical Diagnostic Ultrasound Power Supply Overhaul",
+      "Replace aging filter capacitors on main DC rectifier rail. Test output voltage stability under transducer ultrasound drive cycle.",
+      metroCustId,
+      sarahTechId,
+      "MEDIUM",
+      "PAUSED",
+      schedToday,
+      null,
+      null,
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Assigned to Sarah Jenkins.",
+          changedAt: new Date(now.getTime() - 10 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "ASSIGNED",
+          toStatus: "ACCEPTED",
+          notes: "Job accepted.",
+          changedAt: new Date(now.getTime() - 7 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "ACCEPTED",
+          toStatus: "IN_PROGRESS",
+          notes: "Work started in diagnostic lab.",
+          changedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "IN_PROGRESS",
+          toStatus: "PAUSED",
+          notes: "Paused work: Replacement 450V electrolytic capacitors delayed in courier transit. Expected arrival tomorrow morning.",
+          changedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 6. COMPLETED
+    await upsertWorkOrder(
+      "Critical Care UPS Power Inverter Failover Calibration",
+      "Conducted primary and secondary inverter transfer tests. Calibrated ATS sensors and validated 12.4kW runtime capacity under peak load.",
+      metroCustId,
+      devonTechId,
+      "MEDIUM",
+      "COMPLETED",
+      compYesterday,
+      compYesterday,
+      "Full load test completed. 4ms ATS transfer latency verified. Digital customer sign-off obtained from Dr. Rachel Vance.",
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Dispatched to Devon Miller for critical healthcare power audit.",
+          changedAt: new Date(now.getTime() - 36 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "ASSIGNED",
+          toStatus: "ACCEPTED",
+          notes: "Job accepted by technician.",
+          changedAt: new Date(now.getTime() - 30 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "ACCEPTED",
+          toStatus: "IN_PROGRESS",
+          notes: "Started ATS failover diagnostics.",
+          changedAt: new Date(now.getTime() - 26 * 60 * 60 * 1000),
+        },
+        {
+          changedById: techUserId,
+          fromStatus: "IN_PROGRESS",
+          toStatus: "COMPLETED",
+          notes: "Full load test completed. 4ms ATS transfer latency verified. Digital customer sign-off obtained from Dr. Rachel Vance.",
+          changedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        },
+      ]
+    );
+
+    // 7. CLOSED
+    await upsertWorkOrder(
+      "Commercial HVAC Rooftop Economizer Damper Actuator Replacement",
+      "Replace stuck Belimo economizer actuator on Unit 4. Verify outside air percentage CFM and calibrate CO2 demand control ventilation sensors.",
+      skylineCustId,
+      sarahTechId,
+      "LOW",
+      "CLOSED",
+      closedTwoDaysAgo,
+      closedTwoDaysAgo,
+      "Belimo actuator installed and calibrated. CO2 sensor reporting 450ppm baseline. Energy efficiency verified.",
+      [
+        {
+          changedById: dispatcherId,
+          fromStatus: "OPEN",
+          toStatus: "ASSIGNED",
+          notes: "Assigned to Sarah Jenkins.",
+          changedAt: new Date(now.getTime() - 72 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "ASSIGNED",
+          toStatus: "ACCEPTED",
+          notes: "Job accepted.",
+          changedAt: new Date(now.getTime() - 65 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "ACCEPTED",
+          toStatus: "IN_PROGRESS",
+          notes: "Work started on rooftop Unit 4.",
+          changedAt: new Date(now.getTime() - 60 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "IN_PROGRESS",
+          toStatus: "COMPLETED",
+          notes: "Belimo actuator installed and calibrated. CO2 sensor reporting 450ppm baseline. Energy efficiency verified.",
+          changedAt: new Date(now.getTime() - 52 * 60 * 60 * 1000),
+        },
+        {
+          changedById: dispatcherId,
+          fromStatus: "COMPLETED",
+          toStatus: "CLOSED",
+          notes: "Dispatcher verified invoice, warranty documentation, and signed completion certificate. Work order closed.",
+          changedAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+        },
+      ]
     );
 
     await client.query("COMMIT");
-    console.log("Database seeded successfully with all roles, customers, technicians, work orders, and status logs!");
+    console.log("Database seeded successfully with all roles, customers, technicians, full lifecycle work orders, and status logs!");
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Seed failed:", err);

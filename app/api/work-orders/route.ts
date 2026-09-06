@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth-guard";
+import { triggerLifecycleNotification } from "@/lib/notifications";
 
 type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-type WorkOrderStatusType = "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+type WorkOrderStatusType =
+  | "OPEN"
+  | "ASSIGNED"
+  | "ACCEPTED"
+  | "IN_PROGRESS"
+  | "PAUSED"
+  | "COMPLETED"
+  | "CLOSED"
+  | "CANCELLED";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +31,9 @@ export async function GET(req: NextRequest) {
     const priorityFilter = searchParams.get("priority")?.trim().toUpperCase() || "";
     const technicianFilter = searchParams.get("technicianId")?.trim() || "";
     const customerFilter = searchParams.get("customerId")?.trim() || "";
+    const startDate = searchParams.get("startDate")?.trim() || "";
+    const endDate = searchParams.get("endDate")?.trim() || "";
+    const dateField = searchParams.get("dateField") === "createdAt" ? "createdAt" : "scheduledAt";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -46,24 +58,44 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Search filter
+    // Comprehensive multi-field Search filter
     if (search) {
-      andConditions.push({
-        OR: [
-          { title: { contains: search, mode: "insensitive" as const } },
-          { description: { contains: search, mode: "insensitive" as const } },
-          { customer: { name: { contains: search, mode: "insensitive" as const } } },
-          { customer: { company: { contains: search, mode: "insensitive" as const } } },
-          { technician: { name: { contains: search, mode: "insensitive" as const } } },
-        ],
-      });
+      const orConditions: Record<string, unknown>[] = [
+        { title: { contains: search, mode: "insensitive" as const } },
+        { description: { contains: search, mode: "insensitive" as const } },
+        { customer: { name: { contains: search, mode: "insensitive" as const } } },
+        { customer: { company: { contains: search, mode: "insensitive" as const } } },
+        { customer: { email: { contains: search, mode: "insensitive" as const } } },
+        { customer: { phone: { contains: search, mode: "insensitive" as const } } },
+        { customer: { city: { contains: search, mode: "insensitive" as const } } },
+        { technician: { name: { contains: search, mode: "insensitive" as const } } },
+        { technician: { email: { contains: search, mode: "insensitive" as const } } },
+        { technician: { phone: { contains: search, mode: "insensitive" as const } } },
+        { technician: { specialization: { contains: search, mode: "insensitive" as const } } },
+      ];
+
+      // Check if search matches UUID pattern for direct ID search
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(search)) {
+        orConditions.push({ id: { equals: search } });
+      }
+
+      andConditions.push({ OR: orConditions });
     }
 
     // Status filter
-    if (
-      statusFilter &&
-      ["OPEN", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(statusFilter)
-    ) {
+    const validStatuses: WorkOrderStatusType[] = [
+      "OPEN",
+      "ASSIGNED",
+      "ACCEPTED",
+      "IN_PROGRESS",
+      "PAUSED",
+      "COMPLETED",
+      "CLOSED",
+      "CANCELLED",
+    ];
+
+    if (statusFilter && statusFilter !== "ALL" && validStatuses.includes(statusFilter as WorkOrderStatusType)) {
       andConditions.push({
         status: statusFilter as WorkOrderStatusType,
       });
@@ -72,6 +104,7 @@ export async function GET(req: NextRequest) {
     // Priority filter
     if (
       priorityFilter &&
+      priorityFilter !== "ALL" &&
       ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(priorityFilter)
     ) {
       andConditions.push({
@@ -84,9 +117,31 @@ export async function GET(req: NextRequest) {
       andConditions.push({ customerId: customerFilter });
     }
 
+    // Date Range Filters (startDate / endDate)
+    if (startDate || endDate) {
+      const dateFilterObj: Record<string, Date> = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          dateFilterObj.gte = start;
+        }
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          dateFilterObj.lte = end;
+        }
+      }
+      if (Object.keys(dateFilterObj).length > 0) {
+        andConditions.push({ [dateField]: dateFilterObj });
+      }
+    }
+
     const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
-    const validSortFields = ["title", "priority", "status", "scheduledAt", "createdAt"];
+    const validSortFields = ["title", "priority", "status", "scheduledAt", "createdAt", "completedAt", "updatedAt"];
     const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
 
     const now = new Date();
@@ -101,8 +156,11 @@ export async function GET(req: NextRequest) {
       workOrders,
       totalOpen,
       totalAssigned,
+      totalAccepted,
       totalInProgress,
+      totalPaused,
       totalCompleted,
+      totalClosed,
       totalCancelled,
       totalOverdue,
     ] = await Promise.all([
@@ -140,14 +198,17 @@ export async function GET(req: NextRequest) {
       }),
       prisma.workOrder.count({ where: { ...baseScope, status: "OPEN" } }),
       prisma.workOrder.count({ where: { ...baseScope, status: "ASSIGNED" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "ACCEPTED" } }),
       prisma.workOrder.count({ where: { ...baseScope, status: "IN_PROGRESS" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "PAUSED" } }),
       prisma.workOrder.count({ where: { ...baseScope, status: "COMPLETED" } }),
+      prisma.workOrder.count({ where: { ...baseScope, status: "CLOSED" } }),
       prisma.workOrder.count({ where: { ...baseScope, status: "CANCELLED" } }),
       prisma.workOrder.count({
         where: {
           ...baseScope,
           scheduledAt: { lt: now },
-          status: { in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] },
+          status: { in: ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"] },
         },
       }),
     ]);
@@ -163,11 +224,22 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
       stats: {
-        totalWorkOrders: totalOpen + totalAssigned + totalInProgress + totalCompleted + totalCancelled,
+        totalWorkOrders:
+          totalOpen +
+          totalAssigned +
+          totalAccepted +
+          totalInProgress +
+          totalPaused +
+          totalCompleted +
+          totalClosed +
+          totalCancelled,
         openCount: totalOpen,
         assignedCount: totalAssigned,
+        acceptedCount: totalAccepted,
         inProgressCount: totalInProgress,
+        pausedCount: totalPaused,
         completedCount: totalCompleted,
+        closedCount: totalClosed,
         cancelledCount: totalCancelled,
         overdueCount: totalOverdue,
       },
@@ -224,12 +296,10 @@ export async function POST(req: NextRequest) {
       errors.customerId = "Customer selection is required.";
     }
 
+    const cleanTechId = technicianId && typeof technicianId === "string" && technicianId.trim() !== "" ? technicianId.trim() : null;
+    let finalStatus: WorkOrderStatusType = cleanTechId ? "ASSIGNED" : "OPEN";
     const validPriorities: PriorityType[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
     const finalPriority: PriorityType = validPriorities.includes(priority) ? priority : "MEDIUM";
-
-    let finalStatus: WorkOrderStatusType = ["OPEN", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(status)
-      ? status
-      : "OPEN";
 
     // Validate Customer exists
     if (customerId) {
@@ -242,7 +312,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate Technician and availability rules if technicianId provided
-    const cleanTechId = technicianId && technicianId.trim() !== "" ? technicianId.trim() : null;
     if (cleanTechId) {
       const technician = await prisma.technician.findUnique({
         where: { id: cleanTechId },
@@ -253,10 +322,7 @@ export async function POST(req: NextRequest) {
       } else if (technician.status === "OFF") {
         errors.technicianId = `Cannot assign technician "${technician.name}": Technician is currently Offline / Off-Duty.`;
       } else {
-        // If technician is assigned and status was OPEN, transition status to ASSIGNED
-        if (finalStatus === "OPEN") {
-          finalStatus = "ASSIGNED";
-        }
+        finalStatus = "ASSIGNED";
       }
     }
 
@@ -287,7 +353,7 @@ export async function POST(req: NextRequest) {
         status: finalStatus,
         scheduledAt: parsedScheduledAt,
         completionNotes: completionNotes?.trim() || null,
-        completedAt: finalStatus === "COMPLETED" ? new Date() : null,
+        completedAt: null,
       },
       include: {
         customer: true,
@@ -302,7 +368,21 @@ export async function POST(req: NextRequest) {
         changedById: authContext.user.id,
         fromStatus: "OPEN",
         toStatus: finalStatus,
+        notes: cleanTechId
+          ? "Work order created and assigned to technician."
+          : "Work order created and added to open dispatch queue.",
       },
+    });
+
+    // Dispatch in-app notifications
+    await triggerLifecycleNotification("CREATED", {
+      workOrder: created,
+      actor: {
+        id: authContext.user.id,
+        name: authContext.user.name,
+        role: authContext.role,
+      },
+      technicianName: created.technician?.name || null,
     });
 
     return NextResponse.json(created, { status: 201 });

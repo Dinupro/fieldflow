@@ -6,7 +6,7 @@ type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/technicians - List, search, filter, and paginate technicians
+// GET /api/technicians - List, search, filter, paginate, and track technician workload & performance
 export async function GET(req: NextRequest) {
   const authContext = await getAuthUser(req);
 
@@ -19,6 +19,12 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search")?.trim() || "";
     const statusFilter = searchParams.get("status")?.trim().toUpperCase() || "";
     const specializationFilter = searchParams.get("specialization")?.trim() || "";
+    const serviceAreaFilter = searchParams.get("serviceArea")?.trim() || "";
+    const skillFilter = searchParams.get("skill")?.trim() || "";
+    const certificationFilter = searchParams.get("certification")?.trim() || "";
+    const workloadStatus = searchParams.get("workloadStatus")?.trim().toLowerCase() || "all";
+    const minRatingStr = searchParams.get("minRating");
+    const minRating = minRatingStr ? parseFloat(minRatingStr) : null;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10)));
     const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -26,22 +32,29 @@ export async function GET(req: NextRequest) {
 
     const andConditions: Record<string, unknown>[] = [];
 
-    // Search filter
+    // Multi-field search
     if (search) {
-      andConditions.push({
-        OR: [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { email: { contains: search, mode: "insensitive" as const } },
-          { phone: { contains: search, mode: "insensitive" as const } },
-          { specialization: { contains: search, mode: "insensitive" as const } },
-          { serviceArea: { contains: search, mode: "insensitive" as const } },
-          { skills: { has: search } },
-        ],
-      });
+      const orConditions: Record<string, unknown>[] = [
+        { name: { contains: search, mode: "insensitive" as const } },
+        { email: { contains: search, mode: "insensitive" as const } },
+        { phone: { contains: search, mode: "insensitive" as const } },
+        { specialization: { contains: search, mode: "insensitive" as const } },
+        { serviceArea: { contains: search, mode: "insensitive" as const } },
+        { notes: { contains: search, mode: "insensitive" as const } },
+        { skills: { has: search } },
+        { certifications: { has: search } },
+      ];
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(search)) {
+        orConditions.push({ id: { equals: search } });
+      }
+
+      andConditions.push({ OR: orConditions });
     }
 
     // Status filter
-    if (statusFilter && ["AVAILABLE", "BUSY", "OFF"].includes(statusFilter)) {
+    if (statusFilter && statusFilter !== "ALL" && ["AVAILABLE", "BUSY", "OFF"].includes(statusFilter)) {
       andConditions.push({
         status: statusFilter as TechnicianStatus,
       });
@@ -54,19 +67,66 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Service Area filter
+    if (serviceAreaFilter && serviceAreaFilter !== "all") {
+      andConditions.push({
+        serviceArea: { contains: serviceAreaFilter, mode: "insensitive" as const },
+      });
+    }
+
+    // Skill filter
+    if (skillFilter && skillFilter !== "all") {
+      andConditions.push({
+        skills: { has: skillFilter },
+      });
+    }
+
+    // Certification filter
+    if (certificationFilter && certificationFilter !== "all") {
+      andConditions.push({
+        certifications: { has: certificationFilter },
+      });
+    }
+
+    // Min Rating filter
+    if (minRating && !isNaN(minRating)) {
+      andConditions.push({
+        rating: { gte: minRating },
+      });
+    }
+
     const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
-    const validSortFields = ["name", "status", "specialization", "serviceArea", "createdAt"];
-    const sortField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
+    // Determine if sorting is supported directly at DB level
+    const dbSortFields = ["name", "status", "specialization", "serviceArea", "rating", "experienceYears", "createdAt", "updatedAt"];
+    const isDbSort = dbSortFields.includes(sortBy);
 
-    const [total, technicians, totalAvailable, totalBusy, totalOff] = await Promise.all([
-      prisma.technician.count({ where }),
+    // Fetch technicians with work order relations to compute live workload metrics
+    const [allMatchingTechs, totalAvailable, totalBusy, totalOff] = await Promise.all([
       prisma.technician.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { [sortField]: sortOrder },
+        ...(isDbSort ? { orderBy: { [sortBy]: sortOrder } } : {}),
         include: {
+          workOrders: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              priority: true,
+              scheduledAt: true,
+              completedAt: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              image: true,
+            },
+          },
           _count: {
             select: {
               workOrders: true,
@@ -79,10 +139,90 @@ export async function GET(req: NextRequest) {
       prisma.technician.count({ where: { status: "OFF" } }),
     ]);
 
+    // Process and enrich technicians with workload & performance metrics
+    let enriched = allMatchingTechs.map((tech: any) => {
+      const activeWorkOrders = (tech.workOrders || []).filter((wo: { status: string }) =>
+        ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"].includes(wo.status)
+      );
+      const completedWorkOrders = (tech.workOrders || []).filter((wo: { status: string }) =>
+        ["COMPLETED", "CLOSED"].includes(wo.status)
+      );
+
+      const activeOrdersCount = activeWorkOrders.length;
+      const completedOrdersCount = completedWorkOrders.length;
+      const maxActiveJobs = tech.maxActiveJobs || 3;
+      const workloadPercentage = Math.min(100, Math.round((activeOrdersCount / maxActiveJobs) * 100));
+      const isAtCapacity = activeOrdersCount >= maxActiveJobs;
+
+      // SLA Compliance calculation
+      let onTimeCount = 0;
+      let completedWithDates = 0;
+      completedWorkOrders.forEach((wo: { completedAt: Date | null; scheduledAt: Date | null }) => {
+        if (wo.completedAt && wo.scheduledAt) {
+          completedWithDates++;
+          if (new Date(wo.completedAt) <= new Date(wo.scheduledAt)) {
+            onTimeCount++;
+          }
+        }
+      });
+      const slaComplianceRate = completedWithDates > 0 ? Math.round((onTimeCount / completedWithDates) * 100) : 100;
+
+      return {
+        ...tech,
+        skills: tech.skills || [],
+        certifications: tech.certifications || [],
+        rating: tech.rating ?? 4.9,
+        experienceYears: tech.experienceYears ?? 3,
+        maxActiveJobs,
+        activeOrdersCount,
+        completedOrdersCount,
+        workloadPercentage,
+        isAtCapacity,
+        slaComplianceRate,
+        currentAssignments: activeWorkOrders,
+        completedJobs: completedWorkOrders,
+      };
+    });
+
+    // Workload status filtering if specified
+    if (workloadStatus === "available") {
+      enriched = enriched.filter((t: any) => !t.isAtCapacity && t.status === "AVAILABLE");
+    } else if (workloadStatus === "at_capacity") {
+      enriched = enriched.filter((t: any) => t.isAtCapacity || t.status === "BUSY");
+    }
+
+    // In-memory sorting for computed properties
+    if (!isDbSort) {
+      if (sortBy === "activeWorkload") {
+        enriched.sort((a: any, b: any) =>
+          sortOrder === "asc" ? a.activeOrdersCount - b.activeOrdersCount : b.activeOrdersCount - a.activeOrdersCount
+        );
+      } else if (sortBy === "completedJobs") {
+        enriched.sort((a: any, b: any) =>
+          sortOrder === "asc" ? a.completedOrdersCount - b.completedOrdersCount : b.completedOrdersCount - a.completedOrdersCount
+        );
+      } else if (sortBy === "slaRate") {
+        enriched.sort((a: any, b: any) =>
+          sortOrder === "asc" ? a.slaComplianceRate - b.slaComplianceRate : b.slaComplianceRate - a.slaComplianceRate
+        );
+      }
+    }
+
+    const total = enriched.length;
     const totalPages = Math.ceil(total / limit) || 1;
+    const paginatedTechs = enriched.slice((page - 1) * limit, page * limit);
+
+    // Compute aggregate roster stats
+    const totalTechsCount = totalAvailable + totalBusy + totalOff;
+    const availableForDispatchCount = enriched.filter((t: any) => t.status === "AVAILABLE" && !t.isAtCapacity).length;
+    const totalActiveJobs = enriched.reduce((acc: number, t: any) => acc + (t.activeOrdersCount || 0), 0);
+    const avgRating =
+      enriched.length > 0
+        ? parseFloat((enriched.reduce((acc: number, t: any) => acc + (t.rating || 4.9), 0) / enriched.length).toFixed(1))
+        : 4.9;
 
     return NextResponse.json({
-      technicians,
+      technicians: paginatedTechs,
       pagination: {
         total,
         page,
@@ -90,10 +230,13 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
       stats: {
-        totalTechnicians: totalAvailable + totalBusy + totalOff,
+        totalTechnicians: totalTechsCount,
         availableCount: totalAvailable,
         busyCount: totalBusy,
         offlineCount: totalOff,
+        availableForDispatchCount,
+        totalActiveJobs,
+        avgRating,
       },
     });
   } catch (error) {
@@ -105,7 +248,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/technicians - Create a new technician (Dispatcher & Admin only)
+// POST /api/technicians - Create a new technician with skills, certifications & capacity
 export async function POST(req: NextRequest) {
   const authContext = await getAuthUser(req);
 
@@ -123,7 +266,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, email, phone, specialization, skills, status, serviceArea, notes, avatar } = body;
+    const {
+      name,
+      email,
+      phone,
+      specialization,
+      skills,
+      certifications,
+      rating,
+      experienceYears,
+      maxActiveJobs,
+      status,
+      serviceArea,
+      notes,
+      avatar,
+    } = body;
 
     const errors: Record<string, string> = {};
 
@@ -160,6 +317,17 @@ export async function POST(req: NextRequest) {
         .filter(Boolean);
     }
 
+    // Process certifications into clean array
+    let processedCerts: string[] = [];
+    if (Array.isArray(certifications)) {
+      processedCerts = certifications.map((c) => String(c).trim()).filter(Boolean);
+    } else if (typeof certifications === "string") {
+      processedCerts = certifications
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+    }
+
     const cleanEmail = email?.trim() || null;
 
     // Check email uniqueness if provided
@@ -185,6 +353,10 @@ export async function POST(req: NextRequest) {
         phone: phone?.trim() || null,
         specialization: specialization?.trim() || null,
         skills: processedSkills,
+        certifications: processedCerts,
+        rating: typeof rating === "number" ? Math.min(5, Math.max(1, rating)) : 4.9,
+        experienceYears: typeof experienceYears === "number" ? Math.max(0, experienceYears) : 3,
+        maxActiveJobs: typeof maxActiveJobs === "number" ? Math.max(1, maxActiveJobs) : 3,
         status: (status as TechnicianStatus) || "AVAILABLE",
         serviceArea: serviceArea?.trim() || null,
         notes: notes?.trim() || null,

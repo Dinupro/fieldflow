@@ -31,9 +31,24 @@ enum Priority {
 enum WorkOrderStatus {
   OPEN
   ASSIGNED
+  ACCEPTED
   IN_PROGRESS
+  PAUSED
   COMPLETED
+  CLOSED
   CANCELLED
+}
+
+enum NotificationType {
+  WORK_ORDER_CREATED
+  WORK_ORDER_ASSIGNED
+  WORK_ORDER_ACCEPTED
+  WORK_ORDER_IN_PROGRESS
+  WORK_ORDER_PAUSED
+  WORK_ORDER_COMPLETED
+  WORK_ORDER_CANCELLED
+  WORK_ORDER_CLOSED
+  SYSTEM_ALERT
 }
 
 model User {
@@ -52,6 +67,7 @@ model User {
 
   technician    Technician?
   statusLogs    StatusLog[]
+  notifications Notification[]
 
   @@map("user")
 }
@@ -102,21 +118,25 @@ model Verification {
 }
 
 model Technician {
-  id             String           @id @default(uuid()) @db.Uuid
-  userId         String?          @unique @db.Uuid
-  name           String           @db.VarChar(100)
-  email          String?          @db.VarChar(255)
-  phone          String?          @db.VarChar(20)
-  specialization String?          @db.VarChar(100)
-  skills         String[]
-  status         TechnicianStatus @default(AVAILABLE)
-  serviceArea    String?          @db.VarChar(100)
-  notes          String?
-  avatar         String?
-  createdAt      DateTime         @default(now()) @db.Timestamp
-  updatedAt      DateTime?        @updatedAt @db.Timestamp
-  user           User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  workOrders     WorkOrder[]
+  id              String           @id @default(uuid()) @db.Uuid
+  userId          String?          @unique @db.Uuid
+  name            String           @db.VarChar(100)
+  email           String?          @db.VarChar(255)
+  phone           String?          @db.VarChar(20)
+  specialization  String?          @db.VarChar(100)
+  skills          String[]
+  certifications  String[]         @default([])
+  rating          Float            @default(4.9)
+  experienceYears Int?             @default(3)
+  maxActiveJobs   Int              @default(3)
+  status          TechnicianStatus @default(AVAILABLE)
+  serviceArea     String?          @db.VarChar(100)
+  notes           String?
+  avatar          String?
+  createdAt       DateTime         @default(now()) @db.Timestamp
+  updatedAt       DateTime?        @updatedAt @db.Timestamp
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workOrders      WorkOrder[]
 }
 
 model Customer {
@@ -151,6 +171,7 @@ model WorkOrder {
   technician      Technician?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   customer        Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   statusLogs      StatusLog[]
+  notifications   Notification[]
 }
 
 model StatusLog {
@@ -159,7 +180,26 @@ model StatusLog {
   changedById  String          @db.Uuid
   fromStatus   WorkOrderStatus
   toStatus     WorkOrderStatus
+  notes        String?
   changedAt    DateTime        @default(now()) @db.Timestamp
   workOrder    WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   changedBy    User            @relation(fields: [changedById], references: [id])
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  workOrderId String?          @db.Uuid
+  type        NotificationType
+  title       String           @db.VarChar(150)
+  message     String
+  isRead      Boolean          @default(false)
+  readAt      DateTime?        @db.Timestamp
+  createdAt   DateTime         @default(now()) @db.Timestamp
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workOrder   WorkOrder?       @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notification")
 }

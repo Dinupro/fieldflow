@@ -54,21 +54,34 @@ Welcome to **FieldFlow**! FieldFlow is a centralized field service dispatch and 
 
 ## 2. Getting Started & Login
 
-### 2.1 Creating an Account
+### 2.1 Pre-Seeded Demo Credentials
+For testing and demonstration, the database includes three pre-configured accounts (password for all: `password123`):
+
+| Role | Email Address | Password | Intended Workflow |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@fieldflow.test` | `password123` | Full system access, user role administration, and organization settings. |
+| **Dispatcher** | `dispatch@fieldflow.test` | `password123` | Customer CRM, technician roster, scheduling, and work order dispatching. |
+| **Technician** | `tech@fieldflow.test` | `password123` | Scoped **My Jobs** queue, on-site job start, and job completion notes. |
+
+### 2.2 1-Click Instant Demo Login
+On the [Login Page](app/login/page.tsx), an **Instant Demo Sign-In** panel is available above the login form. Clicking **Admin**, **Dispatcher**, or **Technician** will instantly authenticate you into the dashboard under that persona without manual typing.
+
+### 2.3 Creating a New Account
 1. Open your web browser and navigate to the FieldFlow website (`http://localhost:3000` or your company URL).
 2. Click the **Register** button in the top right corner.
 3. Enter your **Full Name**, **Work Email**, and a secure **Password** (minimum 8 characters).
 4. Click **Create Account**. You will be automatically redirected to the Login page.
 
-### 2.2 Signing In
+### 2.4 Signing In with Email & Password
 1. Go to the **Login** page.
 2. Enter your registered email address and password.
 3. Click **Sign In**.
-4. Once authenticated, you will immediately land on the **Dispatch Intelligence Dashboard**.
+4. Once authenticated, you will immediately land on your role-tailored **Dispatch Intelligence Dashboard**.
 
-### 2.3 Signing Out
+### 2.5 Signing Out
 1. Click the **Logout** button located in the sidebar or top navigation bar.
-2. Your session will safely close, and you will be returned to the home page.
+2. Confirm sign-out in the confirmation modal.
+3. Your session will safely close, and you will be returned to the login portal.
 
 ---
 

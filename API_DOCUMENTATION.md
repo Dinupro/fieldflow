@@ -16,6 +16,7 @@ Complete REST API documentation for the **FieldFlow** Field Service Management &
    - [User Sign-In / Login](#22-sign-in-with-email--password)
    - [Get Current Session](#23-get-current-session)
    - [User Sign-Out / Logout](#24-sign-out--logout)
+   - [Get Current User Role & Profile (`/api/auth/me`)](#25-get-current-user-role--profile)
 3. [Dashboard Analytics Endpoints (`/api/dashboard`)](#3-dashboard-analytics-endpoints)
    - [Get Dispatch Analytics & Aggregations](#31-get-central-dashboard-analytics)
 4. [Customer Management Endpoints (`/api/customers`)](#4-customer-management-endpoints)
@@ -36,6 +37,10 @@ Complete REST API documentation for the **FieldFlow** Field Service Management &
    - [Get Work Order Details & Timeline](#63-get-single-work-order--timeline)
    - [Update Work Order & Status Transition](#64-update-work-order--transition-status)
    - [Delete Work Order](#65-delete-work-order)
+7. [User & Access Management Endpoints (`/api/users`)](#7-user--access-management-endpoints)
+   - [List All Users & Available Technicians](#71-list-users--available-technicians)
+   - [Update User Role & Link Technician](#72-update-user-role--link-technician)
+   - [Delete User Account](#73-delete-user-account)
 
 ---
 
@@ -60,6 +65,14 @@ If the session cookie is missing or invalid, the API returns:
 ```
 with HTTP status code `401 Unauthorized`.
 
+If an authenticated user attempts to access an endpoint restricted to higher roles (e.g., a Technician attempting to call `/api/users` or mutate customer records), the API returns:
+```json
+{
+  "error": "Forbidden: Insufficient role permissions."
+}
+```
+with HTTP status code `403 Forbidden`.
+
 ### Standard HTTP Status Codes
 
 | Code | Status | Description |
@@ -68,6 +81,7 @@ with HTTP status code `401 Unauthorized`.
 | `201` | **Created** | Resource created successfully. Response body contains newly created entity. |
 | `400` | **Bad Request** | Validation failed, missing required fields, or business logic violated. |
 | `401` | **Unauthorized** | Missing or invalid Better Auth session. |
+| `403` | **Forbidden** | User lacks the required role permissions (`ADMIN` or `DISPATCHER`). |
 | `404` | **Not Found** | The specified resource ID was not found in the database. |
 | `409` | **Conflict** | Resource deletion blocked due to active foreign key relations. |
 | `500` | **Internal Server Error** | Unexpected server or database exception. |
@@ -242,6 +256,37 @@ Invalidates the session token and clears the session cookie.
 ```json
 {
   "success": true
+}
+```
+
+---
+
+### 2.5 Get Current User Role & Profile
+
+Returns authenticated user identity, role (`ADMIN`, `DISPATCHER`, or `TECHNICIAN`), and associated technician profile ID if applicable. Used by frontend views to configure role-based permissions and scoped queues.
+
+- **Method**: `GET`
+- **URL**: `/api/auth/me`
+- **Authentication Required**: `Yes`
+
+#### Response Example (`200 OK`)
+```json
+{
+  "user": {
+    "id": "c1f76d49-163e-4fa0-8f92-564bb378e9b8",
+    "name": "Devon Miller",
+    "email": "tech@fieldflow.test",
+    "role": "TECHNICIAN",
+    "technicianId": "80f9b646-5d67-4c85-bf6a-4d1a4c69273a"
+  },
+  "role": "TECHNICIAN"
+}
+```
+
+#### Error Response (`401 Unauthorized`)
+```json
+{
+  "error": "Unauthorized"
 }
 ```
 
@@ -981,6 +1026,139 @@ Deletes a work order. Foreign key configurations in PostgreSQL automatically cas
 {
   "success": true,
   "message": "Work order \"Emergency POS Terminal Migration (Lanes 1-8)\" removed successfully."
+}
+```
+
+---
+
+## 7. User & Access Management Endpoints
+
+Base path: `/api/users`  
+**Authorization**: Restricted to **`ADMIN`** role only. Calls from `DISPATCHER` or `TECHNICIAN` accounts will return `403 Forbidden`.
+
+---
+
+### 7.1 List Users & Available Technicians
+
+Retrieves all registered user accounts with their assigned roles, profile metadata, linked technician profiles, status log counts, and a list of unlinked technicians available for assignment.
+
+- **Method**: `GET`
+- **URL**: `/api/users`
+- **Authentication Required**: `Yes` (`ADMIN` Role)
+
+#### Response Example (`200 OK`)
+```json
+{
+  "users": [
+    {
+      "id": "usr-001",
+      "name": "Sarah Connor",
+      "email": "admin@fieldflow.test",
+      "role": "ADMIN",
+      "image": null,
+      "createdAt": "2026-09-01T08:00:00.000Z",
+      "updatedAt": "2026-09-01T08:00:00.000Z",
+      "technician": null,
+      "_count": {
+        "statusLogs": 14
+      }
+    },
+    {
+      "id": "usr-003",
+      "name": "Devon Miller",
+      "email": "tech@fieldflow.test",
+      "role": "TECHNICIAN",
+      "image": null,
+      "createdAt": "2026-09-01T08:00:00.000Z",
+      "updatedAt": "2026-09-01T08:00:00.000Z",
+      "technician": {
+        "id": "tech-001",
+        "name": "Devon Miller",
+        "specialization": "Fiber Splicing & OTDR Testing",
+        "status": "AVAILABLE",
+        "phone": "+1 (555) 301-4499"
+      },
+      "_count": {
+        "statusLogs": 8
+      }
+    }
+  ],
+  "availableTechnicians": [
+    {
+      "id": "tech-002",
+      "name": "Elena Rostova",
+      "email": "elena.rostova@fieldflow.io",
+      "specialization": "Biomedical Instrumentation & Calibration",
+      "status": "AVAILABLE"
+    }
+  ]
+}
+```
+
+---
+
+### 7.2 Update User Role & Link Technician
+
+Promotes or modifies a user's system role (`ADMIN`, `DISPATCHER`, `TECHNICIAN`) and optionally links their account to a field technician profile.
+
+- **Method**: `PUT`
+- **URL**: `/api/users/:id`
+- **Authentication Required**: `Yes` (`ADMIN` Role)
+
+#### Request Body
+| Field | Type | Required | Validation Rules | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `role` | `string` | **Yes** | `"ADMIN"`, `"DISPATCHER"`, or `"TECHNICIAN"` | Target system role |
+| `technicianId` | `string` | No | Valid Technician UUID or empty string to unlink | Associated field technician profile |
+
+```json
+{
+  "role": "TECHNICIAN",
+  "technicianId": "tech-002"
+}
+```
+
+#### Response Example (`200 OK`)
+```json
+{
+  "success": true,
+  "user": {
+    "id": "usr-004",
+    "name": "Elena Rostova",
+    "email": "elena.rostova@fieldflow.io",
+    "role": "TECHNICIAN",
+    "technician": {
+      "id": "tech-002",
+      "name": "Elena Rostova",
+      "specialization": "Biomedical Instrumentation & Calibration",
+      "status": "AVAILABLE"
+    }
+  }
+}
+```
+
+---
+
+### 7.3 Delete User Account
+
+Permanently deletes a registered user account and clears associated session records. The API enforces a safety guard preventing administrators from deleting their own active account.
+
+- **Method**: `DELETE`
+- **URL**: `/api/users/:id`
+- **Authentication Required**: `Yes` (`ADMIN` Role)
+
+#### Response Example (`200 OK`)
+```json
+{
+  "success": true,
+  "message": "User account removed successfully."
+}
+```
+
+#### Error Example (`400 Bad Request` - Self Deletion Guard)
+```json
+{
+  "error": "You cannot delete your own administrator account."
 }
 ```
 

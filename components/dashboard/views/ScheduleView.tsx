@@ -13,25 +13,46 @@ import {
 
 interface WorkOrder {
   id: string;
-  orderNumber: string;
+  orderNumber?: string;
   title: string;
-  status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  status:
+    | "OPEN"
+    | "ASSIGNED"
+    | "ACCEPTED"
+    | "IN_PROGRESS"
+    | "PAUSED"
+    | "COMPLETED"
+    | "CLOSED"
+    | "CANCELLED";
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  scheduledDate?: string | null;
+  scheduledAt?: string | null;
   customer?: { name: string; address?: string | null; city?: string | null };
   technician?: { name: string };
 }
 
 export default function ScheduleView() {
-  const [currentDate] = useState("Today, " + new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }));
+  const [currentDate] = useState(
+    "Today, " +
+      new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+  );
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/work-orders")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        setWorkOrders(Array.isArray(data) ? data : []);
+    fetch("/api/work-orders?limit=50")
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data: any) => {
+        if (Array.isArray(data)) {
+          setWorkOrders(data);
+        } else if (data && data.workOrders && Array.isArray(data.workOrders)) {
+          setWorkOrders(data.workOrders);
+        } else {
+          setWorkOrders([]);
+        }
       })
       .catch((err) => console.error("Failed to load schedule work orders:", err))
       .finally(() => setLoading(false));
@@ -41,14 +62,45 @@ export default function ScheduleView() {
     switch (status) {
       case "COMPLETED":
         return "border-l-4 border-l-emerald-500 bg-emerald-50/50";
+      case "CLOSED":
+        return "border-l-4 border-l-slate-600 bg-slate-50";
       case "IN_PROGRESS":
         return "border-l-4 border-l-purple-500 bg-purple-50/50";
+      case "PAUSED":
+        return "border-l-4 border-l-orange-500 bg-orange-50/50";
+      case "ACCEPTED":
+        return "border-l-4 border-l-teal-500 bg-teal-50/50";
       case "ASSIGNED":
-        return "border-l-4 border-l-blue-500 bg-blue-50/50";
+        return "border-l-4 border-l-indigo-500 bg-indigo-50/50";
       case "OPEN":
-        return "border-l-4 border-l-amber-500 bg-amber-50/50";
+        return "border-l-4 border-l-blue-500 bg-blue-50/50";
+      case "CANCELLED":
+        return "border-l-4 border-l-rose-500 bg-rose-50/40";
       default:
         return "border-l-4 border-l-slate-400 bg-slate-50";
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "COMPLETED":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "CLOSED":
+        return "bg-slate-100 text-slate-800 border-slate-300";
+      case "IN_PROGRESS":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "PAUSED":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "ACCEPTED":
+        return "bg-teal-100 text-teal-800 border-teal-200";
+      case "ASSIGNED":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      case "OPEN":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "CANCELLED":
+        return "bg-rose-100 text-rose-800 border-rose-200";
+      default:
+        return "bg-slate-100 text-slate-800 border-slate-200";
     }
   };
 
@@ -117,12 +169,21 @@ export default function ScheduleView() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    {wo.scheduledDate
-                      ? new Date(wo.scheduledDate).toLocaleDateString() + " " + new Date(wo.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : "Window TBD"}
+                    {wo.scheduledAt
+                      ? new Date(wo.scheduledAt).toLocaleDateString() +
+                        " " +
+                        new Date(wo.scheduledAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Schedule Pending"}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white text-slate-800 border border-slate-200 w-fit">
+                    <span
+                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${getStatusBadge(
+                        wo.status
+                      )} w-fit`}
+                    >
                       {wo.status.replace("_", " ")}
                     </span>
                     <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-900 text-white w-fit">
@@ -132,18 +193,18 @@ export default function ScheduleView() {
                 </div>
 
                 <h4 className="text-sm font-bold text-slate-900">
-                  {wo.orderNumber}: {wo.title}
+                  {wo.title}
                 </h4>
 
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    {wo.customer?.name || "Unassigned Customer"}
+                    {wo.customer?.name || "Direct Client"}
                     {wo.customer?.city ? ` (${wo.customer.city})` : ""}
                   </span>
                   <span className="flex items-center gap-1 font-semibold text-blue-700">
                     <User className="w-3.5 h-3.5 text-blue-500" />
-                    {wo.technician?.name || "Unassigned Tech"}
+                    {wo.technician?.name || "Unassigned"}
                   </span>
                 </div>
               </div>

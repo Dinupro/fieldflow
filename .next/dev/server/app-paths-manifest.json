@@ -4,6 +4,7 @@
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/customers/route": "app/api/customers/route.js",
   "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/api/notifications/route": "app/api/notifications/route.js",
   "/api/technicians/route": "app/api/technicians/route.js",
   "/api/users/[id]/route": "app/api/users/[id]/route.js",
   "/api/users/route": "app/api/users/route.js",

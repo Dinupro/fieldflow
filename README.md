@@ -68,25 +68,36 @@ Built using the modern **Next.js App Router**, **React 19**, and **Tailwind CSS*
 ### 🔐 Enterprise Role-Based Access Control (RBAC)
 FieldFlow enforces strict, multi-tiered authorization across both the API routes and frontend interface:
 - **👑 Administrator (`ADMIN`)**:
-  - Full organizational oversight and unrestricted record access.
+  - Full organizational oversight and unrestricted record access across all modules.
   - Complete executive dashboard analytics across all dispatch operations.
   - User & Access Management console (`/dashboard` Users view) for promoting users to `ADMIN`, `DISPATCHER`, or `TECHNICIAN`, linking technician profiles, and deleting unauthorized accounts.
 - **📡 Dispatcher (`DISPATCHER`)**:
   - Full dispatch operations: customer creation and editing, technician roster management, work order scheduling, and prioritization.
   - Intelligent technician assignment with availability guards (`AVAILABLE`, `BUSY`, `OFF`).
   - View full dispatch dashboard, activity logs, and real-time SLA trackers.
-  - Restricted from accessing user administration (enforced via `403 Forbidden`).
+  - Restricted from accessing user administration (enforced via server-side `403 Forbidden`).
 - **🔧 Field Technician (`TECHNICIAN`)**:
   - **Scoped Job View**: Technicians only see work orders specifically assigned to their linked profile (`where: { technicianId: auth.technician.id }`).
   - **Direct Job Execution**: One-click **"Start Work"** button (transitions order to `IN_PROGRESS`) and **"Complete Job"** modal with completion notes & resolution timestamps (`COMPLETED`).
   - **Strict Security Guardrails**: Cannot create, edit, or delete customers, technicians, or other technicians' work orders (enforced via server-side `403 Forbidden` guards).
   - Scoped dashboard metrics showing only personal assignments, completion velocity, and pending tasks.
 
+### 🔑 Demo Accounts & Instant 1-Click Access
+The application includes pre-seeded accounts in Neon PostgreSQL for immediate evaluation (password: `password123`):
+
+| Role | Email | Password | Primary Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@fieldflow.test` | `password123` | Executive Dashboard, Work Orders, Calendar, Customers CRM, Tech Roster, **User & Role Management** |
+| **Dispatcher** | `dispatch@fieldflow.test` | `password123` | Dashboard, Customers CRM, Tech Roster, Work Orders (Create/Assign/Edit), Calendar, Reports |
+| **Technician** | `tech@fieldflow.test` | `password123` | **"My Jobs"** queue, 1-click **"Start Work"** & **"Complete Job"** with resolution notes, "My Schedule" |
+
+> **Tip**: The [Login Page](app/login/page.tsx) provides a **1-Click Instant Demo Login** panel to sign in as any role with a single click.
+
 ### 🛡️ Secure Authentication & Session Management
 - Multi-factor ready email/password authentication powered by **Better Auth**.
 - Secure, encrypted HTTP-only session cookies (`better-auth.session_token`).
 - Route middleware protection guarding `/dashboard`, `/customers`, `/technicians`, and `/work-orders`.
-- Auto-linking: When a technician registers with the email of an existing technician profile, their account is automatically associated.
+- Dynamic `/api/auth/me` endpoint verifying active session, role, and linked technician profiles.
 - Auto-redirect mechanisms for authenticated vs. unauthenticated visitors.
 
 ### 📊 Real-Time Dispatch Analytics
@@ -99,24 +110,60 @@ FieldFlow enforces strict, multi-tiered authorization across both the API routes
 - **Prioritized Alerts**: Urgent warning banner with Overdue SLAs positioned first.
 
 ### 👥 Customer Relationship Management
-- Full CRUD operations for commercial and residential customer accounts.
-- Search, filter by city/company, and sorting.
-- Modal-based account creation, viewing, and editing.
-- Relationship-safe deletion guards preventing orphaned work order records.
-- Instant CSV export of customer registries.
+- **Full Commercial CRUD Operations**: Enterprise customer account provisioning, profile updating, and safe deletion in Neon PostgreSQL.
+- **Rich Customer Profiles & Live Dispatch History**: Interactive modal displaying customer SLA compliance rates, total dispatches, active in-flight jobs, and full chronological work order history with assigned technician details.
+- **Site Access & Internal Notes**: Special lockbox codes, security instructions, and dispatch SLA notes attached to each client record.
+- **Multi-Dimensional Search & Filtering**: Instant search across customer name, company, email, phone, city, and notes, with filters for metro cities, active order status, and creation date ranges.
+- **Safety Cascading Guards**: Prevents accidental deletion of customers with active, in-flight work orders to preserve field dispatch integrity.
+- **1-Click CSV Exporter**: Export complete customer registries with service addresses, city, and internal notes.
 
 ### 🛠️ Field Technician & Skills Management
-- Technician roster with skill tagging (e.g., `Fiber Splicing`, `Cisco CCNA`, `HVAC-R`).
-- Three-state availability toggle (`AVAILABLE`, `BUSY`, `OFF`).
-- Service territory assignment and active work order counters.
-- Deletion guards preventing removal of technicians with in-flight jobs.
+- **Complete Contractor Profiles**: Rich technician identity tracking name, email, phone, specialization, service territory, customer rating (`★ 4.9`), and experience tenure.
+- **Skills & Verified Certifications**: Dual tag management for hands-on skills (e.g., `Fiber Splicing`, `PLC Troubleshooting`, `BMS Systems`) and certified credentials (e.g., `EPA 608 Universal`, `FOA CFOT Certified`, `Master Electrician License #ME-4901`, `OSHA 30 Safety`).
+- **Real-Time Workload & Capacity Tracking**: Live capacity progress bars (`N / M Active Jobs`, `X% Capacity`) with dynamic color indicators (Emerald, Amber, Rose at-capacity).
+- **Interactive Technician Profile Modal**:
+  - 4 Performance Metric Cards: Active Workload Capacity %, Completed Dispatches, SLA On-Time Rate %, and Seniority.
+  - **In-Flight Assignments Tab**: Live work order cards with priority badges, status badges, customer names, addresses, and scheduled windows.
+  - **Resolved Jobs History Tab**: Chronological history of completed work orders with resolution notes, completion dates, and SLA on-time compliance tags.
+  - Categorized Skills & Certifications panel.
+- **Three-State Availability Toggle**: One-click status switcher (`AVAILABLE` with active pulse, `BUSY`, `OFF`).
+- **Multi-Dimensional Search & Filtering**: Instant search across name, email, phone, specialization, territory, skills, certifications, and notes, with filters for status, specialization, territory, skill, workload capacity, and minimum rating.
+- **Safety Cascading Guards**: Prevents accidental deletion of technicians assigned to active in-flight work orders.
+- **1-Click CSV Exporter**: Exports complete technician roster with skills, certifications, rating, status, workload, and contact details.
 
-### 📑 Work Order Scheduling & StatusLog Lifecycle
-- Comprehensive job creation with customer linking, technician assignment, priority, and schedule.
-- **Technician Availability Validation**: Server-side guard rejecting assignment of offline/off-duty staff (`400 Bad Request`).
-- **Automated StatusLog Timeline**: Every state transition (`OPEN` $\rightarrow$ `ASSIGNED` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED`) is permanently recorded with user attribution and timestamps.
-- Overdue job detection based on scheduled SLA deadlines.
-- Multi-criteria filter tabs (`Status`, `Priority`, `Technician`, `Search`, `Sort`).
+### 📑 Work Order Lifecycle Orchestration & Immutable Status Logs
+FieldFlow implements a production-grade, state-machine driven lifecycle with strict server-side authorization:
+- **Strict Transition State Machine**:
+  $$\text{Created (OPEN)} \xrightarrow{\text{Assign}} \text{ASSIGNED} \xrightarrow{\text{Accept}} \text{ACCEPTED} \xrightarrow{\text{Start Work}} \text{IN\_PROGRESS} \xrightarrow{\text{Complete}} \text{COMPLETED} \xrightarrow{\text{Sign Off}} \text{CLOSED}$$
+- **Auxiliary Lifecycle States**:
+  - **Reject / Decline**: Assigned technicians can decline assignments with notes $\rightarrow$ returns work order to `OPEN` pool and unlinks technician.
+  - **Pause Work**: In-progress jobs can be paused (`IN_PROGRESS` $\rightarrow$ `PAUSED`) with reason notes (e.g. awaiting replacement components), releasing the technician's availability (`AVAILABLE`).
+  - **Resume Work**: Paused jobs can be resumed (`PAUSED` $\rightarrow$ `IN_PROGRESS`), transitioning the technician back to `BUSY`.
+  - **Cancel Work Order**: Dispatchers / Admins can cancel in-flight orders (`OPEN`, `ASSIGNED`, `ACCEPTED`, `PAUSED` $\rightarrow$ `CANCELLED`) with cancellation reasons.
+- **Server-Side Transition Validation**: Direct skips (e.g., `OPEN` $\rightarrow$ `IN_PROGRESS` or `COMPLETED` $\rightarrow$ `IN_PROGRESS`) and backward state jumps are strictly rejected with `400 Bad Request`.
+- **Mandatory Completion Notes**: Completion requests (`IN_PROGRESS` / `PAUSED` $\rightarrow$ `COMPLETED`) require mandatory resolution notes ($\ge 5$ characters).
+- **Automated Technician Availability Sync**:
+  - Starting or resuming work automatically transitions the technician to `BUSY`.
+  - Completing, pausing, declining, or cancelling work automatically transitions the technician back to `AVAILABLE`.
+- **Immutable StatusLog Audit History**: Every state change records `fromStatus`, `toStatus`, `changedById`, `changedAt` timestamp, and contextual `notes` in PostgreSQL.
+- **Interactive Status Timeline**: Work order modal displays an interactive, chronological activity log of all state transitions and dispatcher/technician notes.
+
+### 📅 Live Dispatch Calendar & Timeline
+- Database-synchronized dispatch timeline reflecting active work orders, customer locations, assigned technicians, and scheduled time windows.
+
+### 📈 Reports & SLA Intelligence Module
+- **Live Neon Database Aggregations**: Computes true SLA On-Time compliance rate (`completedAt <= scheduledAt`), average turnaround time (hours), and first-visit fix rates across flexible timeframes (`30D`, `90D`, `6M`, `1Y`, `All Time`).
+- **Technician SLA Compliance Leaderboard**: Real-time contractor rankings by total jobs assigned, completed dispatches, resolution percentage, and turnaround velocity.
+- **Top Customer Request Volumes**: Account-level breakdown of completed, active, and urgent dispatches per client.
+- **Work Order Registry & Audit Ledger**: Searchable historical ledger linking customer, technician, priority, and resolution notes.
+- **CSV Data Exporters**: 1-click CSV downloads for both Work Orders Audit history and Technician Benchmark rankings.
+- **Executive PDF Printable Report**: High-resolution print modal with certified audit badges and complete executive KPI summaries.
+
+### 🔔 Real-Time In-App Notification System
+- **Event-Driven Dispatching**: Automatically records and broadcasts notifications on work order creation, assignment, acceptance, start of work, pauses, completion, cancellation, and closure.
+- **Role & Target Scoping**: Direct assignment alerts delivered to assigned field technicians; status changes, SLA events, and completion reports broadcasted to dispatchers and administrators.
+- **Pulse Badge & Live Polling**: Unread counter badge on the top navigation bar updating in real time every 15 seconds.
+- **Interactive Notification Tray**: Filter by All vs. Unread, 1-click **Mark all as read**, individual read toggle, and **Clear read** history.
 
 ### 🎨 Modern SaaS Design System & UI/UX Polish
 - **Role-Aware Sidebar Navigation**: Custom navigation groups tailored specifically for Administrators, Dispatchers, and Technicians.
@@ -140,7 +187,7 @@ FieldFlow enforces strict, multi-tiered authorization across both the API routes
 | **Language** | [TypeScript 5.0+](https://www.typescriptlang.org/) | End-to-end static type safety |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Responsive design system, custom palettes, CSS variables |
 | **Database** | [Neon PostgreSQL](https://neon.tech/) | Serverless PostgreSQL with connection pooling |
-| **ORM** | [Prisma ORM 7.10.0](https://www.prisma.io/) | `@prisma/adapter-pg`, schema migrations, Prisma Client API |
+| **ORM** | [Prisma ORM 7.10.0](https://www.prisma.io/) | `prisma.config.ts`, `@prisma/adapter-pg`, Prisma Client API |
 | **Authentication** | [Better Auth 1.7.2](https://www.better-auth.com/) | Prisma adapter, session management, secure cookies |
 | **Icons** | [Lucide React](https://lucide.dev/) | Consistent, clean iconography |
 | **Linting & QA** | [ESLint 9](https://eslint.org/) | React 19 rules, TypeScript strict checking |
@@ -326,6 +373,9 @@ npx prisma db push
 
 # Generate the typesafe Prisma Client
 npx prisma generate
+
+# Seed demo dataset with role accounts, customers, technicians & work orders
+node scripts/seed-demo.mjs
 ```
 
 ---
@@ -382,39 +432,68 @@ npm run start
 
 ## 🌐 API Architecture & Endpoints
 
-All endpoints require an active session cookie, returning `401 Unauthorized` if unauthenticated.
+All endpoints require an active session cookie, returning `401 Unauthorized` if unauthenticated. Restricted endpoints return `403 Forbidden` if the user lacks the necessary role permissions.
 
-### 1. Dashboard Analytics
+### 1. Authentication & Session Context
+| Method | Endpoint | Query / Body Params | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/auth/me` | None | Returns active user session, system role (`ADMIN`, `DISPATCHER`, `TECHNICIAN`), and linked technician ID. |
+| `POST` | `/api/auth/sign-in/email` | `{ email, password }` | Authenticates user credentials and sets HTTP-only session cookie. |
+| `POST` | `/api/auth/sign-up/email` | `{ name, email, password }` | Registers new user account with default `DISPATCHER` role. |
+| `POST` | `/api/auth/sign-out` | None | Invalidates session and clears cookies. |
+
+### 2. Dashboard Analytics
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/dashboard` | Returns aggregated metrics, monthly trend curves, status shares, technician workloads, activity feeds, and prioritized alerts. |
 
-### 2. Customer Management
+### 3. Customer Management
 | Method | Endpoint | Query / Body Params | Description |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/customers` | `?search=&city=&page=1&limit=10` | Paginated customer registry with search and city filters. |
-| `POST` | `/api/customers` | `{ name, email, phone, address, city, company, notes }` | Creates a new customer account. |
+| `POST` | `/api/customers` | `{ name, email, phone, address, city, company, notes }` | Creates a new customer account (`ADMIN` / `DISPATCHER` only). |
 | `GET` | `/api/customers/[id]` | `id: UUID` | Fetches customer details and associated work order history. |
-| `PUT` | `/api/customers/[id]` | `{ name, email, phone, address, city, ... }` | Updates customer information. |
+| `PUT` | `/api/customers/[id]` | `{ name, email, phone, address, city, ... }` | Updates customer information (`ADMIN` / `DISPATCHER` only). |
 | `DELETE` | `/api/customers/[id]` | `id: UUID` | Deletes customer (blocks if active work orders exist). |
 
-### 3. Technician Management
+### 4. Technician Management
 | Method | Endpoint | Query / Body Params | Description |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/technicians` | `?search=&status=&page=1&limit=10` | Lists technicians with active job counts and availability. |
-| `POST` | `/api/technicians` | `{ name, email, phone, specialization, skills, status, serviceArea }` | Provisions a new technician. |
+| `POST` | `/api/technicians` | `{ name, email, phone, specialization, skills, status, serviceArea }` | Provisions a new technician (`ADMIN` / `DISPATCHER` only). |
 | `GET` | `/api/technicians/[id]`| `id: UUID` | Returns single technician profile and active job queue. |
-| `PUT` | `/api/technicians/[id]`| `{ status, specialization, skills, ... }` | Modifies technician record. |
+| `PUT` | `/api/technicians/[id]`| `{ status, specialization, skills, ... }` | Modifies technician record (`ADMIN` / `DISPATCHER` only). |
 | `DELETE` | `/api/technicians/[id]`| `id: UUID` | Removes technician (blocked if active jobs are assigned). |
 
-### 4. Work Order Management
+### 5. Work Order Management
 | Method | Endpoint | Query / Body Params | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/work-orders` | `?search=&status=&priority=&technicianId=&page=1` | Searchable, filterable work order list with real-time stats. |
+| `GET` | `/api/work-orders` | `?search=&status=&priority=&technicianId=&page=1` | Searchable, filterable work order list with real-time stats. Automatically scoped for `TECHNICIAN`. |
 | `POST` | `/api/work-orders` | `{ title, description, customerId, technicianId, priority, scheduledAt }` | Validates technician availability, creates work order, and inserts initial `StatusLog`. |
 | `GET` | `/api/work-orders/[id]`| `id: UUID` | Retrieves job details, customer info, technician data, and complete `statusLogs` timeline. |
-| `PUT` | `/api/work-orders/[id]`| `{ status, completionNotes, ... }` | Updates order; auto-logs `StatusLog` entry on status change. |
+| `PUT` | `/api/work-orders/[id]`| `{ status, completionNotes, ... }` | Updates order / transitions state; auto-logs `StatusLog` entry with user attribution. |
 | `DELETE` | `/api/work-orders/[id]`| `id: UUID` | Removes work order (cascades associated status logs). |
+
+### 6. Reports & SLA Analytics
+| Method | Endpoint | Query / Body Params | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/reports` | `?timeRange=6m&startDate=&endDate=` | Live aggregated SLA metrics, technician performance benchmarks, monthly velocity, priority distribution, customer volume rankings, and full audit records. |
+
+### 7. In-App Notifications
+| Method | Endpoint | Query / Body Params | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/notifications` | `?unreadOnly=false&limit=30` | Returns user's in-app notifications and real-time unread count. |
+| `PUT` | `/api/notifications` | None | Marks all notifications as read for current user. |
+| `DELETE` | `/api/notifications` | None | Clears all read notifications for current user. |
+| `PATCH` | `/api/notifications/[id]` | `{ isRead: boolean }` | Toggles read state of a single notification. |
+| `DELETE` | `/api/notifications/[id]` | `id: UUID` | Deletes single notification owned by current user. |
+
+### 8. User Access & Role Administration (`ADMIN` Only)
+| Method | Endpoint | Query / Body Params | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/users` | None | Lists all registered users, system roles, and unassigned technician profiles. |
+| `PUT` | `/api/users/[id]` | `{ role: "ADMIN" \| "DISPATCHER" \| "TECHNICIAN", technicianId?: string }` | Updates user role and optionally links a technician profile. |
+| `DELETE` | `/api/users/[id]` | `id: UUID` | Deletes user account (prevents self-deletion). |
 
 ---
 

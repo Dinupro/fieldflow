@@ -6,7 +6,7 @@ type TechnicianStatus = "AVAILABLE" | "BUSY" | "OFF";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/technicians/[id] - Fetch single technician with assigned work orders
+// GET /api/technicians/[id] - Fetch single technician profile with live assignments & performance metrics
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -23,17 +23,33 @@ export async function GET(
     const technician = await prisma.technician.findUnique({
       where: { id },
       include: {
-        workOrders: {
+        user: {
           select: {
             id: true,
-            title: true,
-            description: true,
-            status: true,
-            priority: true,
-            scheduledAt: true,
-            createdAt: true,
+            email: true,
+            role: true,
+            image: true,
+          },
+        },
+        workOrders: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                company: true,
+                phone: true,
+                address: true,
+                city: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
+        },
+        _count: {
+          select: {
+            workOrders: true,
+          },
         },
       },
     });
@@ -42,17 +58,72 @@ export async function GET(
       return NextResponse.json({ error: "Technician not found" }, { status: 404 });
     }
 
-    return NextResponse.json(technician);
+    // Separate active in-flight assignments and completed jobs
+    const activeWorkOrders = technician.workOrders.filter((wo: { status: string }) =>
+      ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"].includes(wo.status)
+    );
+    const completedWorkOrders = technician.workOrders.filter((wo: { status: string }) =>
+      ["COMPLETED", "CLOSED"].includes(wo.status)
+    );
+
+    const totalOrdersCount = technician.workOrders.length;
+    const activeOrdersCount = activeWorkOrders.length;
+    const completedOrdersCount = completedWorkOrders.length;
+    const maxActiveJobs = technician.maxActiveJobs || 3;
+    const workloadPercentage = Math.min(100, Math.round((activeOrdersCount / maxActiveJobs) * 100));
+    const isAtCapacity = activeOrdersCount >= maxActiveJobs;
+
+    // SLA & Turnaround calculations
+    let onTimeCount = 0;
+    let completedWithDates = 0;
+    let totalTurnaroundHours = 0;
+
+    completedWorkOrders.forEach((wo: { completedAt: Date | null; scheduledAt: Date | null; createdAt: Date }) => {
+      if (wo.completedAt) {
+        if (wo.scheduledAt) {
+          completedWithDates++;
+          if (new Date(wo.completedAt) <= new Date(wo.scheduledAt)) {
+            onTimeCount++;
+          }
+        }
+        const durationHours = (new Date(wo.completedAt).getTime() - new Date(wo.createdAt).getTime()) / (1000 * 60 * 60);
+        if (durationHours > 0) {
+          totalTurnaroundHours += durationHours;
+        }
+      }
+    });
+
+    const slaOnTimeRate = completedWithDates > 0 ? Math.round((onTimeCount / completedWithDates) * 100) : 100;
+    const averageTurnaroundHours =
+      completedOrdersCount > 0 ? parseFloat((totalTurnaroundHours / completedOrdersCount).toFixed(1)) : 0;
+
+    return NextResponse.json({
+      ...technician,
+      skills: technician.skills || [],
+      certifications: technician.certifications || [],
+      rating: technician.rating ?? 4.9,
+      experienceYears: technician.experienceYears ?? 3,
+      maxActiveJobs,
+      activeOrdersCount,
+      completedOrdersCount,
+      totalOrdersCount,
+      workloadPercentage,
+      isAtCapacity,
+      slaOnTimeRate,
+      averageTurnaroundHours,
+      activeWorkOrders,
+      completedWorkOrders,
+    });
   } catch (error) {
     console.error("[TECHNICIAN_GET_ERROR]", error);
     return NextResponse.json(
-      { error: "Internal server error fetching technician." },
+      { error: "Internal server error fetching technician profile." },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/technicians/[id] - Update technician details and availability status
+// PUT /api/technicians/[id] - Update technician details, certifications, rating & availability
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -66,7 +137,21 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, email, phone, specialization, skills, status, serviceArea, notes, avatar } = body;
+    const {
+      name,
+      email,
+      phone,
+      specialization,
+      skills,
+      certifications,
+      rating,
+      experienceYears,
+      maxActiveJobs,
+      status,
+      serviceArea,
+      notes,
+      avatar,
+    } = body;
 
     const existingTech = await prisma.technician.findUnique({
       where: { id },
@@ -140,6 +225,17 @@ export async function PUT(
         .filter(Boolean);
     }
 
+    // Process certifications
+    let processedCerts: string[] = [];
+    if (Array.isArray(certifications)) {
+      processedCerts = certifications.map((c) => String(c).trim()).filter(Boolean);
+    } else if (typeof certifications === "string") {
+      processedCerts = certifications
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+    }
+
     const updated = await prisma.technician.update({
       where: { id },
       data: {
@@ -148,7 +244,11 @@ export async function PUT(
         phone: phone?.trim() || null,
         specialization: specialization?.trim() || null,
         skills: processedSkills,
-        status: (status as TechnicianStatus) || "AVAILABLE",
+        certifications: processedCerts,
+        rating: typeof rating === "number" ? Math.min(5, Math.max(1, rating)) : existingTech.rating,
+        experienceYears: typeof experienceYears === "number" ? Math.max(0, experienceYears) : existingTech.experienceYears,
+        maxActiveJobs: typeof maxActiveJobs === "number" ? Math.max(1, maxActiveJobs) : existingTech.maxActiveJobs,
+        status: (status as TechnicianStatus) || existingTech.status,
         serviceArea: serviceArea?.trim() || null,
         notes: notes?.trim() || null,
         avatar: avatar?.trim() || null,
@@ -205,16 +305,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Technician not found" }, { status: 404 });
     }
 
-    // Check for active work orders (OPEN, ASSIGNED, IN_PROGRESS)
+    // Check for active work orders (OPEN, ASSIGNED, ACCEPTED, IN_PROGRESS, PAUSED)
     const activeOrders = technician.workOrders.filter(
       (wo: { id: string; title: string; status: string }) =>
-        wo.status === "OPEN" || wo.status === "ASSIGNED" || wo.status === "IN_PROGRESS"
+        ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"].includes(wo.status)
     );
 
     if (activeOrders.length > 0) {
       return NextResponse.json(
         {
-          error: `Cannot delete technician "${technician.name}": Technician is assigned to ${activeOrders.length} active work order(s). Please reassign or complete these jobs before deleting.`,
+          error: `Cannot delete technician "${technician.name}": Technician has ${activeOrders.length} active in-flight work order(s). Please reassign or complete these jobs before deleting.`,
           activeOrdersCount: activeOrders.length,
           activeOrders: activeOrders.map((o: { id: string; title: string; status: string }) => ({
             id: o.id,
