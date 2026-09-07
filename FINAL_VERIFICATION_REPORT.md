@@ -41,7 +41,7 @@ All **19 target verification dimensions** have achieved a **100% success rate** 
 | 19 | **Database Connectivity** | Neon PostgreSQL connection pooling via `@prisma/adapter-pg` | 🟢 Sub-millisecond latency, zero connection exhaustion | **PASSED** |
 | 20 | **RBAC Authorization** | Multi-tiered access for `ADMIN`, `DISPATCHER`, and `TECHNICIAN` | 🟢 Server-side `403 Forbidden` guards, scoped queues, route guards | **PASSED** |
 | 21 | **Schedule Calendar** | Real-time dispatch schedule synchronized with PostgreSQL work orders | 🟢 Live order timeline rendering with status indicators | **PASSED** |
-| 22 | **Instant Demo Sign-In** | 1-click persona logins (`Admin`, `Dispatcher`, `Technician`) | 🟢 Single-click evaluation with pre-seeded `password123` accounts | **PASSED** |
+| 22 | **Instant Demo Sign-In** | 1-click persona logins (`Admin`, `Dispatcher`, `Technician`) | 🟢 Single-click evaluation with pre-seeded demo persona accounts | **PASSED** |
 
 ---
 

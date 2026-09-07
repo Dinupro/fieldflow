@@ -55,13 +55,13 @@ Welcome to **FieldFlow**! FieldFlow is a centralized field service dispatch and 
 ## 2. Getting Started & Login
 
 ### 2.1 Pre-Seeded Demo Credentials
-For testing and demonstration, the database includes three pre-configured accounts (password for all: `password123`):
+For testing and demonstration, the database includes three pre-configured accounts:
 
-| Role | Email Address | Password | Intended Workflow |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@fieldflow.test` | `password123` | Full system access, user role administration, and organization settings. |
-| **Dispatcher** | `dispatch@fieldflow.test` | `password123` | Customer CRM, technician roster, scheduling, and work order dispatching. |
-| **Technician** | `tech@fieldflow.test` | `password123` | Scoped **My Jobs** queue, on-site job start, and job completion notes. |
+| Role | Email Address | Intended Workflow |
+| :--- | :--- | :--- |
+| **Administrator** | `admin@fieldflow.test` | Full system access, user role administration, and organization settings. |
+| **Dispatcher** | `dispatch@fieldflow.test` | Customer CRM, technician roster, scheduling, and work order dispatching. |
+| **Technician** | `tech@fieldflow.test` | Scoped **My Jobs** queue, on-site job start, and job completion notes. |
 
 ### 2.2 1-Click Instant Demo Login
 On the [Login Page](app/login/page.tsx), an **Instant Demo Sign-In** panel is available above the login form. Clicking **Admin**, **Dispatcher**, or **Technician** will instantly authenticate you into the dashboard under that persona without manual typing.
