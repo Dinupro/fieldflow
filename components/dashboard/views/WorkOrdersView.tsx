@@ -24,7 +24,18 @@ import {
   Check,
   ShieldCheck,
   ArrowRight,
+  Phone,
+  Sparkles,
+  ClipboardList,
+  RotateCcw,
+  CheckCircle,
 } from "lucide-react";
+import LifecycleProgressBar from "@/components/dashboard/LifecycleProgressBar";
+import WorkOrderWorkflowGuide from "@/components/dashboard/WorkOrderWorkflowGuide";
+import SearchableCustomerSelect, { CustomerOption } from "@/components/dashboard/SearchableCustomerSelect";
+import SearchableTechnicianSelect, { TechnicianOption } from "@/components/dashboard/SearchableTechnicianSelect";
+import QuickCustomerModal, { CreatedCustomerData } from "@/components/dashboard/QuickCustomerModal";
+import CompletionNotesModal from "@/components/dashboard/CompletionNotesModal";
 
 export type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type WorkOrderStatusType =
@@ -85,21 +96,6 @@ export interface WorkOrderData {
   statusLogs?: StatusLogEntry[];
 }
 
-interface CustomerOption {
-  id: string;
-  name: string;
-  company: string | null;
-  city: string | null;
-}
-
-interface TechnicianOption {
-  id: string;
-  name: string;
-  specialization: string | null;
-  status: "AVAILABLE" | "BUSY" | "OFF";
-  serviceArea: string | null;
-}
-
 interface PaginationInfo {
   total: number;
   page: number;
@@ -151,8 +147,6 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     overdueCount: 0,
   });
 
-  const [nowTimestamp] = useState(() => new Date().getTime());
-
   // Query / Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -173,6 +167,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showQuickCustomerModal, setShowQuickCustomerModal] = useState(false);
 
   // Lifecycle Action Modals
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -187,7 +182,6 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
 
   // Modal input fields
   const [actionNotesInput, setActionNotesInput] = useState("");
-  const [completionNotesInput, setCompletionNotesInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Form state for Create & Edit
@@ -226,29 +220,30 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
   }, [searchTerm]);
 
   // Fetch dropdown options for Customers and Technicians (if not technician)
-  useEffect(() => {
+  const fetchDropdownOptions = useCallback(async () => {
     if (role !== "TECHNICIAN") {
-      const fetchDropdownOptions = async () => {
-        try {
-          const [custRes, techRes] = await Promise.all([
-            fetch("/api/customers?limit=100"),
-            fetch("/api/technicians?limit=100"),
-          ]);
-          if (custRes.ok) {
-            const custData = await custRes.json();
-            setCustomersList(custData.customers || []);
-          }
-          if (techRes.ok) {
-            const techData = await techRes.json();
-            setTechniciansList(techData.technicians || []);
-          }
-        } catch (err) {
-          console.error("Error fetching dropdown options:", err);
+      try {
+        const [custRes, techRes] = await Promise.all([
+          fetch("/api/customers?limit=100"),
+          fetch("/api/technicians?limit=100"),
+        ]);
+        if (custRes.ok) {
+          const custData = await custRes.json();
+          setCustomersList(custData.customers || []);
         }
-      };
-      fetchDropdownOptions();
+        if (techRes.ok) {
+          const techData = await techRes.json();
+          setTechniciansList(techData.technicians || []);
+        }
+      } catch (err) {
+        console.error("Error fetching dropdown options:", err);
+      }
     }
   }, [role]);
+
+  useEffect(() => {
+    fetchDropdownOptions();
+  }, [fetchDropdownOptions]);
 
   // Fetch work orders from API with server-side search, filtering, sorting, pagination
   const fetchWorkOrders = useCallback(async () => {
@@ -296,7 +291,21 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     } finally {
       setLoading(false);
     }
-  }, [page, limit, sortBy, sortOrder, debouncedSearch, statusFilter, priorityFilter, technicianFilter, customerFilter, startDate, endDate, dateField, role]);
+  }, [
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    debouncedSearch,
+    statusFilter,
+    priorityFilter,
+    technicianFilter,
+    customerFilter,
+    startDate,
+    endDate,
+    dateField,
+    role,
+  ]);
 
   // Sorting header click handler
   const handleSortToggle = (field: string) => {
@@ -324,7 +333,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       errors.description = "Work order description is required.";
     }
     if (!formData.customerId) {
-      errors.customerId = "Please select a client customer.";
+      errors.customerId = "Please select or create a client customer.";
     }
 
     if (formData.technicianId) {
@@ -345,7 +354,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       description: "",
       customerId: customersList[0]?.id || "",
       technicianId: "",
-      priority: "MEDIUM",
+      priority: "HIGH",
       status: "OPEN",
       scheduledAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 16),
       completionNotes: "",
@@ -384,7 +393,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to create work order.");
       }
 
-      showToast("success", `Work Order "${data.title}" created successfully!`);
+      showToast("success", `Work Order "${data.title}" dispatched successfully!`);
       setShowCreateModal(false);
       fetchWorkOrders();
     } catch (err: unknown) {
@@ -393,6 +402,13 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Quick Customer Creation Callback
+  const handleQuickCustomerCreated = (newCust: CreatedCustomerData) => {
+    setCustomersList((prev) => [newCust, ...prev]);
+    setFormData((prev) => ({ ...prev, customerId: newCust.id }));
+    showToast("success", `Customer "${newCust.name}" created and selected!`);
   };
 
   // Open Edit Modal
@@ -458,11 +474,11 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  // =========================================================
-  // LIFECYCLE ACTIONS
-  // =========================================================
+  // ----------------------------------------------------
+  // LIFECYCLE ACTION HANDLERS
+  // ----------------------------------------------------
 
-  // 1. Technician: Accept Assignment
+  // 1. Technician: Accept Assignment (ASSIGNED -> ACCEPTED)
   const handleAcceptWork = async (wo: WorkOrderData) => {
     setSubmitting(true);
     try {
@@ -471,7 +487,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "ACCEPTED",
-          notes: "Technician accepted assigned work order",
+          notes: "Technician accepted assignment and confirmed dispatch SLA",
         }),
       });
 
@@ -480,17 +496,17 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to accept work order.");
       }
 
-      showToast("success", `Work Order "${wo.title}" accepted! Ready to start work.`);
+      showToast("success", `Job "${wo.title}" accepted! Ready to start work.`);
       fetchWorkOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error accepting work order";
+      const msg = err instanceof Error ? err.message : "Error accepting assignment";
       showToast("error", msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 2. Technician: Reject Assignment (Decline)
+  // 2. Technician: Reject Assignment (ASSIGNED -> OPEN)
   const handleOpenRejectModal = (wo: WorkOrderData) => {
     setActiveTargetOrder(wo);
     setActionNotesInput("");
@@ -532,7 +548,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  // 3. Technician: Start Work (ACCEPTED -> IN_PROGRESS)
+  // 3. Technician: Start Work (ASSIGNED/ACCEPTED -> IN_PROGRESS)
   const handleStartWork = async (wo: WorkOrderData) => {
     setSubmitting(true);
     try {
@@ -541,7 +557,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "IN_PROGRESS",
-          notes: "Technician arrived on-site and commenced service",
+          notes: "Technician arrived on-site and commenced service execution",
         }),
       });
 
@@ -550,7 +566,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to start work order.");
       }
 
-      showToast("success", `Work started on "${wo.title}" (Status: In Progress). Technician marked Busy.`);
+      showToast("success", `Work started on "${wo.title}"! Status updated to In Progress.`);
       fetchWorkOrders();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error starting work";
@@ -580,7 +596,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
           status: "PAUSED",
           notes: actionNotesInput.trim()
             ? `Work paused: ${actionNotesInput.trim()}`
-            : "Work paused by technician (awaiting parts / access)",
+            : "Work paused by technician (awaiting parts / client access)",
         }),
       });
 
@@ -589,7 +605,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to pause work order.");
       }
 
-      showToast("success", `Work paused on "${activeTargetOrder.title}". Technician status updated.`);
+      showToast("success", `Work paused on "${activeTargetOrder.title}".`);
       setShowPauseModal(false);
       setActiveTargetOrder(null);
       fetchWorkOrders();
@@ -629,21 +645,15 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  // 6. Technician: Complete Job (IN_PROGRESS/PAUSED -> COMPLETED)
+  // 6. Technician: Open Complete Modal
   const handleOpenCompleteModal = (wo: WorkOrderData) => {
     setActiveTargetOrder(wo);
-    setCompletionNotesInput(wo.completionNotes || "");
     setShowCompleteModal(true);
   };
 
-  const handleSubmitCompletion = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Submit Completion Notes
+  const handleSubmitCompletionWithNotes = async (notes: string) => {
     if (!activeTargetOrder) return;
-
-    if (!completionNotesInput.trim() || completionNotesInput.trim().length < 5) {
-      showToast("error", "Completion notes are mandatory (minimum 5 characters).");
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -652,9 +662,9 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "COMPLETED",
-          completionNotes: completionNotesInput.trim(),
+          completionNotes: notes,
           completedAt: new Date().toISOString(),
-          notes: `Job completed with notes: ${completionNotesInput.trim()}`,
+          notes: `Job completed with sign-off notes: ${notes}`,
         }),
       });
 
@@ -663,7 +673,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to complete work order.");
       }
 
-      showToast("success", `Work order "${activeTargetOrder.title}" marked Completed! Ready for Dispatcher sign-off.`);
+      showToast("success", `Work order "${activeTargetOrder.title}" marked Completed! Ready for Dispatcher closure.`);
       setShowCompleteModal(false);
       setActiveTargetOrder(null);
       fetchWorkOrders();
@@ -695,7 +705,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
           status: "CLOSED",
           notes: actionNotesInput.trim()
             ? `Final sign-off by Dispatcher: ${actionNotesInput.trim()}`
-            : "Work order reviewed and officially closed/signed off",
+            : "Work order reviewed, verified, and officially closed/signed off",
         }),
       });
 
@@ -716,7 +726,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  // 8. Dispatcher / Admin: Cancel Work Order (OPEN/ASSIGNED/ACCEPTED/PAUSED -> CANCELLED)
+  // 8. Dispatcher / Admin: Cancel Work Order
   const handleOpenCancelModal = (wo: WorkOrderData) => {
     setActiveTargetOrder(wo);
     setActionNotesInput("");
@@ -772,13 +782,12 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  // Open Delete Modal (Dispatcher & Admin only)
+  // Open Delete Modal
   const handleOpenDelete = (wo: WorkOrderData) => {
     setSelectedWorkOrder(wo);
     setShowDeleteModal(true);
   };
 
-  // Submit Delete Work Order
   const handleDeleteWorkOrder = async () => {
     if (!selectedWorkOrder) return;
 
@@ -793,7 +802,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         throw new Error(data.error || "Failed to delete work order.");
       }
 
-      showToast("success", `Work order "${selectedWorkOrder.title}" deleted successfully.`);
+      showToast("success", `Work order "${selectedWorkOrder.title}" deleted.`);
       setShowDeleteModal(false);
       setSelectedWorkOrder(null);
       fetchWorkOrders();
@@ -883,33 +892,12 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
     }
   };
 
-  const getStatusDotColor = (status: WorkOrderStatusType) => {
-    switch (status) {
-      case "COMPLETED":
-        return "bg-emerald-500";
-      case "CLOSED":
-        return "bg-slate-500";
-      case "IN_PROGRESS":
-        return "bg-purple-500";
-      case "PAUSED":
-        return "bg-orange-500";
-      case "ACCEPTED":
-        return "bg-teal-500";
-      case "ASSIGNED":
-        return "bg-indigo-500";
-      case "OPEN":
-        return "bg-blue-500";
-      case "CANCELLED":
-        return "bg-rose-500";
-    }
-  };
-
   const formatStatusLabel = (status: WorkOrderStatusType) => {
     switch (status) {
       case "IN_PROGRESS":
         return "In Progress";
       case "OPEN":
-        return "Open";
+        return "Open (Unassigned)";
       case "ASSIGNED":
         return "Assigned";
       case "ACCEPTED":
@@ -919,7 +907,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       case "COMPLETED":
         return "Completed";
       case "CLOSED":
-        return "Closed";
+        return "Closed & Verified";
       case "CANCELLED":
         return "Cancelled";
     }
@@ -927,77 +915,78 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
 
   const isOverdue = (wo: WorkOrderData) => {
     if (!wo.scheduledAt) return false;
-    const isPast = new Date(wo.scheduledAt).getTime() < nowTimestamp;
-    return isPast && ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"].includes(wo.status);
+    const isUnresolved = ["OPEN", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "PAUSED"].includes(wo.status);
+    return isUnresolved && new Date(wo.scheduledAt).getTime() < Date.now();
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Toast Feedback */}
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-20 right-6 z-50 max-w-md w-full animate-fadeIn shadow-2xl">
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
           <div
-            className={`p-4 rounded-2xl border flex items-start gap-3 backdrop-blur-md ${toast.type === "success"
-                ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
-                : "bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-500/10"
-              }`}
+            className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold text-white ${
+              toast.type === "success"
+                ? "bg-slate-900 border-emerald-500/40 text-emerald-300"
+                : "bg-rose-950 border-rose-500/40 text-rose-200"
+            }`}
           >
             {toast.type === "success" ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             ) : (
-              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
             )}
-            <div className="flex-1 text-xs sm:text-sm font-medium leading-snug">
-              {toast.message}
-            </div>
-            <button
-              onClick={() => setToast(null)}
-              className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <span>{toast.message}</span>
           </div>
         </div>
       )}
 
-      {/* Header Section */}
+      {/* 1. Header & Title Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              {role === "TECHNICIAN" ? "My Assigned Work Orders" : "Work Order Management"}
-            </h2>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${role === "TECHNICIAN"
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                  : "bg-blue-100 text-blue-700 border-blue-200"
-                }`}
+          <div className="flex items-center gap-2.5 mb-1">
+            <div
+              className={`w-9 h-9 rounded-2xl text-white flex items-center justify-center shadow-md ${
+                role === "TECHNICIAN"
+                  ? "bg-emerald-600 shadow-emerald-600/20"
+                  : "bg-blue-600 shadow-blue-600/20"
+              }`}
             >
-              {role === "TECHNICIAN" ? "Technician Execution Portal" : "Full Lifecycle Control"}
+              {role === "TECHNICIAN" ? <Wrench className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              {role === "TECHNICIAN" ? "My Assigned Jobs" : "Work Orders Management"}
+            </h1>
+            <span
+              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                role === "TECHNICIAN"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-blue-50 text-blue-700 border-blue-200"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                  role === "TECHNICIAN" ? "bg-emerald-500" : "bg-blue-500"
+                }`}
+              />
+              <span>{role === "TECHNICIAN" ? "Field Mode" : "Live Dispatch"}</span>
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500">
             {role === "TECHNICIAN"
-              ? "Accept jobs, start service, pause when needed, and complete with mandatory sign-off notes."
-              : "Strict lifecycle orchestration: Created → Assigned → Accepted → In Progress → Completed → Closed."}
+              ? "Your dedicated queue of assigned service orders, customer site addresses, and execution triggers."
+              : "End-to-end field service lifecycle: schedule dispatches, track technician workload, and log completions."}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={fetchWorkOrders}
-            title="Refresh work order records"
+            title="Refresh database records"
             className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <svg
-              className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span className="hidden sm:inline">Sync</span>
+            <RotateCcw className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <button
@@ -1014,19 +1003,25 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Create Work Order</span>
+              <span>Dispatch New Order</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Metrics Stat Cards */}
+      {/* 2. End-to-End Operational Workflow Guide Banner */}
+      <WorkOrderWorkflowGuide
+        role={role}
+        onQuickCreateClick={role !== "TECHNICIAN" ? handleOpenCreate : undefined}
+      />
+
+      {/* 3. Metric KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Total Work Orders */}
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">
-              {role === "TECHNICIAN" ? "My Total" : "Total Orders"}
+              {role === "TECHNICIAN" ? "My Total Jobs" : "Total Orders"}
             </span>
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <FileText className="w-3.5 h-3.5" />
@@ -1044,17 +1039,17 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">
-              {role === "TECHNICIAN" ? "Ready" : "Assigned/Accepted"}
+              {role === "TECHNICIAN" ? "Pending Start" : "Assigned"}
             </span>
-            <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-teal-600">
+            <span className="text-2xl font-black text-indigo-600">
               {stats.assignedCount + stats.acceptedCount}
             </span>
-            <span className="text-[10px] font-bold text-teal-700">Pre-Dispatch</span>
+            <span className="text-[10px] font-bold text-indigo-700">Pre-Dispatch</span>
           </div>
         </div>
 
@@ -1077,22 +1072,19 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Paused</span>
             <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-              </svg>
+              <Clock className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-orange-600">{stats.pausedCount}</span>
-            <span className="text-[10px] font-bold text-orange-700">Awaiting Action</span>
+            <span className="text-[10px] font-bold text-orange-700">Awaiting Parts</span>
           </div>
         </div>
 
         {/* Completed & Closed */}
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Completed/Closed</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Resolved</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
@@ -1101,48 +1093,40 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             <span className="text-2xl font-black text-emerald-600">
               {stats.completedCount + stats.closedCount}
             </span>
-            <span className="text-[10px] font-bold text-emerald-700">Resolved</span>
+            <span className="text-[10px] font-bold text-emerald-700">Completed</span>
           </div>
         </div>
 
         {/* Overdue Alert */}
         <div
-          className={`p-4 rounded-2xl border shadow-xs space-y-1.5 ${stats.overdueCount > 0
-              ? "bg-rose-50/70 border-rose-200"
-              : "bg-white border-slate-200"
-            }`}
+          className={`p-4 rounded-2xl border shadow-xs space-y-1.5 ${
+            stats.overdueCount > 0 ? "bg-rose-50/70 border-rose-200" : "bg-white border-slate-200"
+          }`}
         >
           <div className="flex items-center justify-between text-slate-500">
             <span className={`text-[11px] font-bold uppercase tracking-wider ${stats.overdueCount > 0 ? "text-rose-700" : ""}`}>
               Overdue SLAs
             </span>
             <div
-              className={`w-7 h-7 rounded-lg flex items-center justify-center ${stats.overdueCount > 0
-                  ? "bg-rose-100 text-rose-600 animate-pulse"
-                  : "bg-emerald-50 text-emerald-600"
-                }`}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                stats.overdueCount > 0 ? "bg-rose-100 text-rose-600 animate-pulse" : "bg-emerald-50 text-emerald-600"
+              }`}
             >
               <AlertCircle className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span
-              className={`text-2xl font-black ${stats.overdueCount > 0 ? "text-rose-600" : "text-slate-800"
-                }`}
-            >
+            <span className={`text-2xl font-black ${stats.overdueCount > 0 ? "text-rose-600" : "text-slate-800"}`}>
               {stats.overdueCount}
             </span>
-            <span
-              className={`text-[10px] font-bold ${stats.overdueCount > 0 ? "text-rose-700" : "text-emerald-600"
-                }`}
-            >
-              {stats.overdueCount > 0 ? "Urgent Attention" : "On Schedule"}
+            <span className={`text-[10px] font-bold ${stats.overdueCount > 0 ? "text-rose-700" : "text-emerald-600"}`}>
+              {stats.overdueCount > 0 ? "Needs Action" : "On Schedule"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* 4. Filter & Search Controls */}
       <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
           {/* Search Input */}
@@ -1152,8 +1136,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               type="text"
               placeholder={
                 role === "TECHNICIAN"
-                  ? "Search by ID, title, customer, phone..."
-                  : "Search by ID, customer, technician, email, phone..."
+                  ? "Search by ID, job title, client name..."
+                  : "Search work orders by title, customer, technician, phone..."
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -1169,9 +1153,8 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             )}
           </div>
 
-          {/* Filter Tabs & Dropdowns */}
+          {/* Filter Tabs */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Status Tabs */}
             <div className="flex items-center p-1 rounded-xl bg-slate-100 text-xs font-bold overflow-x-auto max-w-full">
               {[
                 { label: "All", value: "all" },
@@ -1190,10 +1173,11 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     setStatusFilter(tab.value);
                     setPage(1);
                   }}
-                  className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${statusFilter === tab.value
+                  className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                    statusFilter === tab.value
                       ? `${tab.color || "bg-white text-slate-900"} text-white shadow-xs`
                       : "text-slate-600 hover:text-slate-900"
-                    }`}
+                  }`}
                 >
                   {tab.label}
                 </button>
@@ -1201,183 +1185,86 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             </div>
 
             {/* Priority Filter */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+            <select
+              value={priorityFilter}
+              onChange={(e) => {
+                setPriorityFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600"
+            >
+              <option value="all">All Priorities</option>
+              <option value="URGENT">Urgent</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+
+            {/* Customer Filter (Dispatcher & Admin) */}
+            {role !== "TECHNICIAN" && (
               <select
-                value={priorityFilter}
+                value={customerFilter}
                 onChange={(e) => {
-                  setPriorityFilter(e.target.value);
+                  setCustomerFilter(e.target.value);
                   setPage(1);
                 }}
-                className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600"
+                className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
               >
-                <option value="all">All Priorities</option>
-                <option value="URGENT">Urgent</option>
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
+                <option value="all">All Customers</option>
+                {customersList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.company ? `(${c.company})` : ""}
+                  </option>
+                ))}
               </select>
-            </div>
-
-            {/* Customer Filter (only for Dispatcher & Admin) */}
-            {role !== "TECHNICIAN" && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                <select
-                  value={customerFilter}
-                  onChange={(e) => {
-                    setCustomerFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
-                >
-                  <option value="all">All Customers</option>
-                  {customersList.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} {c.company ? `(${c.company})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
             )}
 
-            {/* Technician Filter (only for Dispatcher & Admin) */}
+            {/* Technician Filter (Dispatcher & Admin) */}
             {role !== "TECHNICIAN" && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                <select
-                  value={technicianFilter}
-                  onChange={(e) => {
-                    setTechnicianFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
-                >
-                  <option value="all">All Technicians</option>
-                  <option value="unassigned">Unassigned Only</option>
-                  {techniciansList.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={technicianFilter}
+                onChange={(e) => {
+                  setTechnicianFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600 max-w-37.5 truncate"
+              >
+                <option value="all">All Technicians</option>
+                <option value="unassigned">Unassigned Only</option>
+                {techniciansList.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
             )}
 
             {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={`${sortBy}-${sortOrder}`}
-                onChange={(e) => {
-                  const [field, order] = e.target.value.split("-");
-                  setSortBy(field);
-                  setSortOrder(order as "asc" | "desc");
-                  setPage(1);
-                }}
-                className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600"
-              >
-                <option value="createdAt-desc">Newest Added</option>
-                <option value="scheduledAt-asc">Scheduled (Earliest)</option>
-                <option value="scheduledAt-desc">Scheduled (Latest)</option>
-                <option value="priority-desc">Priority</option>
-                <option value="title-asc">Title (A-Z)</option>
-              </select>
-            </div>
-
-            {/* Page Size */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(parseInt(e.target.value, 10));
-                  setPage(1);
-                }}
-                className="px-2 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600"
-              >
-                <option value="5">5 / page</option>
-                <option value="10">10 / page</option>
-                <option value="25">25 / page</option>
-                <option value="50">50 / page</option>
-                <option value="100">100 / page</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Secondary Date Range Filter Bar */}
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-100 flex-wrap text-xs text-slate-600">
-          <div className="flex items-center gap-1.5 font-bold text-slate-700">
-            <Calendar className="w-3.5 h-3.5 text-blue-600" />
-            <span>Date Range:</span>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-slate-400 font-medium">From:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setPage(1);
-                }}
-                className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold outline-none focus:border-blue-600"
-              />
-            </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-slate-400 font-medium">To:</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setPage(1);
-                }}
-                className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold outline-none focus:border-blue-600"
-              />
-            </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-slate-400 font-medium">Field:</span>
-              <select
-                value={dateField}
-                onChange={(e) => {
-                  setDateField(e.target.value as "scheduledAt" | "createdAt");
-                  setPage(1);
-                }}
-                className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold outline-none focus:border-blue-600"
-              >
-                <option value="scheduledAt">Scheduled Date</option>
-                <option value="createdAt">Created Date</option>
-              </select>
-            </div>
-
-            {(startDate || endDate || searchTerm || statusFilter !== "all" || priorityFilter !== "all" || customerFilter !== "all" || technicianFilter !== "all") && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
-                  setPriorityFilter("all");
-                  setTechnicianFilter("all");
-                  setCustomerFilter("all");
-                  setStartDate("");
-                  setEndDate("");
-                  setPage(1);
-                }}
-                className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                <span>Reset Filters</span>
-              </button>
-            )}
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split("-");
+                setSortBy(field);
+                setSortOrder(order as "asc" | "desc");
+                setPage(1);
+              }}
+              className="px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-bold outline-none cursor-pointer focus:border-blue-600"
+            >
+              <option value="createdAt-desc">Newest Added</option>
+              <option value="scheduledAt-asc">Scheduled (Earliest)</option>
+              <option value="scheduledAt-desc">Scheduled (Latest)</option>
+              <option value="priority-desc">Priority</option>
+              <option value="title-asc">Title (A-Z)</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden max-h-175 overflow-y-auto">
+      {/* 5. Main Work Orders Table & Action Feed */}
+      <div className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 border-b border-slate-200 shadow-xs">
+            <thead className="bg-slate-50/90 border-b border-slate-200">
               <tr className="text-[11px] font-bold uppercase tracking-wider text-slate-600 select-none">
                 <th
                   onClick={() => handleSortToggle("title")}
@@ -1392,17 +1279,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                 </th>
                 <th className="py-3.5 px-4">Client Customer</th>
                 {role !== "TECHNICIAN" && <th className="py-3.5 px-4">Assigned Technician</th>}
-                <th
-                  onClick={() => handleSortToggle("status")}
-                  className="py-3.5 px-4 cursor-pointer hover:text-blue-600 transition-colors"
-                >
-                  <div className="flex items-center gap-1">
-                    <span>Lifecycle Status</span>
-                    {sortBy === "status" && (
-                      <span className="text-blue-600 text-xs">{sortOrder === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </div>
-                </th>
+                <th className="py-3.5 px-4">Lifecycle Step</th>
                 <th
                   onClick={() => handleSortToggle("scheduledAt")}
                   className="py-3.5 px-4 cursor-pointer hover:text-blue-600 transition-colors"
@@ -1414,7 +1291,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     )}
                   </div>
                 </th>
-                <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                <th className="py-3.5 px-4 sm:px-6 text-right">Workflow Actions</th>
               </tr>
             </thead>
 
@@ -1429,10 +1306,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="space-y-1.5">
-                        <div className="w-32 h-4 bg-slate-200 rounded" />
-                        <div className="w-20 h-3 bg-slate-100 rounded" />
-                      </div>
+                      <div className="w-32 h-4 bg-slate-200 rounded" />
                     </td>
                     {role !== "TECHNICIAN" && (
                       <td className="py-4 px-4">
@@ -1440,13 +1314,13 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       </td>
                     )}
                     <td className="py-4 px-4">
-                      <div className="w-20 h-6 bg-slate-200 rounded-full" />
+                      <div className="w-24 h-4 bg-slate-200 rounded" />
                     </td>
                     <td className="py-4 px-4">
                       <div className="w-24 h-4 bg-slate-200 rounded" />
                     </td>
                     <td className="py-4 px-4 sm:px-6 text-right">
-                      <div className="w-16 h-8 bg-slate-200 rounded-xl ml-auto" />
+                      <div className="w-20 h-8 bg-slate-200 rounded-xl ml-auto" />
                     </td>
                   </tr>
                 ))
@@ -1454,21 +1328,21 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                 <tr>
                   <td colSpan={role === "TECHNICIAN" ? 5 : 6} className="py-16 text-center text-slate-400">
                     <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
                         <FileText className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-800 text-sm">
+                        <h4 className="font-bold text-slate-900 text-sm">
                           {role === "TECHNICIAN"
-                            ? "No Assigned Jobs in View"
-                            : "No Work Orders Found"}
+                            ? "No Assigned Work Orders"
+                            : "No Work Orders in Database"}
                         </h4>
                         <p className="text-xs text-slate-500 mt-1">
                           {role === "TECHNICIAN"
-                            ? "You do not have any work orders matching the selected filter criteria."
-                            : debouncedSearch || statusFilter !== "all" || priorityFilter !== "all"
-                              ? "No work orders match the current filter criteria. Try clearing search filters."
-                              : "Start dispatching by creating the first field service work order."}
+                            ? "You do not have any pending jobs assigned to your technician profile."
+                            : debouncedSearch || statusFilter !== "all"
+                            ? "No orders match your filter criteria. Reset filters to see all jobs."
+                            : "Create your first work order to start the dispatch and completion workflow."}
                         </p>
                       </div>
                       {role !== "TECHNICIAN" && (
@@ -1477,7 +1351,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                           className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>Create First Work Order</span>
+                          <span>Dispatch First Work Order</span>
                         </button>
                       )}
                     </div>
@@ -1488,13 +1362,10 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                   const overdue = isOverdue(wo);
 
                   return (
-                    <tr
-                      key={wo.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
-                    >
-                      {/* Job Title & Priority */}
+                    <tr key={wo.id} className="hover:bg-slate-50/70 transition-colors group">
+                      {/* Job Details & Priority */}
                       <td className="py-3.5 px-4 sm:px-6">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span
                               className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${getPriorityBadgeClass(
@@ -1504,24 +1375,20 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                               {wo.priority}
                             </span>
                             <span
-                              className="font-bold text-slate-900 truncate hover:text-blue-600 cursor-pointer max-w-xs block"
                               onClick={() => handleOpenView(wo)}
+                              className="font-bold text-slate-900 hover:text-blue-600 cursor-pointer truncate max-w-xs block"
                             >
                               {wo.title}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 truncate max-w-sm line-clamp-1">
-                            {wo.description}
-                          </p>
+                          <p className="text-[11px] text-slate-500 truncate max-w-sm">{wo.description}</p>
                         </div>
                       </td>
 
                       {/* Customer */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
-                          <span className="font-bold text-slate-800 block truncate">
-                            {wo.customer?.name}
-                          </span>
+                          <span className="font-bold text-slate-900 block truncate">{wo.customer?.name}</span>
                           <span className="text-[11px] text-slate-500 flex items-center gap-1 truncate">
                             <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{wo.customer?.company || wo.customer?.city || "Direct Client"}</span>
@@ -1529,7 +1396,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                         </div>
                       </td>
 
-                      {/* Assigned Technician (only for Dispatcher & Admin) */}
+                      {/* Assigned Technician (Dispatcher / Admin view) */}
                       {role !== "TECHNICIAN" && (
                         <td className="py-3.5 px-4">
                           {wo.technician ? (
@@ -1544,16 +1411,17 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                                     .slice(0, 2)}
                                 </div>
                                 <span
-                                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${wo.technician.status === "AVAILABLE"
+                                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                                    wo.technician.status === "AVAILABLE"
                                       ? "bg-emerald-500"
                                       : wo.technician.status === "BUSY"
-                                        ? "bg-amber-500"
-                                        : "bg-slate-400"
-                                    }`}
+                                      ? "bg-amber-500"
+                                      : "bg-slate-400"
+                                  }`}
                                 />
                               </div>
                               <div className="min-w-0">
-                                <span className="font-bold text-slate-800 text-xs block truncate">
+                                <span className="font-bold text-slate-900 text-xs block truncate">
                                   {wo.technician.name}
                                 </span>
                                 <span className="text-[10px] text-slate-500 block truncate">
@@ -1570,38 +1438,31 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                         </td>
                       )}
 
-                      {/* Status Badge */}
+                      {/* Lifecycle Step & Status Badge */}
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(
-                            wo.status
-                          )}`}
-                        >
+                        <div className="space-y-1">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${getStatusDotColor(wo.status)}`}
-                          />
-                          <span>{formatStatusLabel(wo.status)}</span>
-                        </span>
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeClass(
+                              wo.status
+                            )}`}
+                          >
+                            <span>{formatStatusLabel(wo.status)}</span>
+                          </span>
+                          <LifecycleProgressBar status={wo.status} compact />
+                        </div>
                       </td>
 
-                      {/* Schedule & Overdue */}
+                      {/* Schedule & SLA */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
                           {wo.scheduledAt ? (
                             <div className="flex items-center gap-1 text-slate-700 text-xs font-semibold">
                               <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                               <span>{new Date(wo.scheduledAt).toLocaleDateString()}</span>
-                              <span className="text-slate-400 text-[11px]">
-                                {new Date(wo.scheduledAt).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
                             </div>
                           ) : (
-                            <span className="text-[11px] text-slate-400 italic">Not scheduled</span>
+                            <span className="text-[11px] text-slate-400 italic">Unscheduled</span>
                           )}
-
                           {overdue && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
                               <AlertCircle className="w-3 h-3" />
@@ -1615,123 +1476,89 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       <td className="py-3.5 px-4 sm:px-6 text-right">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           {/* ---------------------------------------------------- */}
-                          {/* TECHNICIAN ROLE ACTIONS */}
+                          {/* TECHNICIAN ACTIONS (Primary, Large, Prominent) */}
                           {/* ---------------------------------------------------- */}
                           {role === "TECHNICIAN" ? (
                             <>
-                              {/* 1. ASSIGNED -> Accept or Reject */}
+                              {/* ASSIGNED -> Accept & Start */}
                               {wo.status === "ASSIGNED" && (
                                 <>
                                   <button
                                     onClick={() => handleAcceptWork(wo)}
                                     disabled={submitting}
-                                    title="Accept Assignment"
-                                    className="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+                                    className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
                                   >
                                     <Check className="w-3.5 h-3.5" />
                                     <span>Accept</span>
                                   </button>
                                   <button
-                                    onClick={() => handleOpenRejectModal(wo)}
+                                    onClick={() => handleStartWork(wo)}
                                     disabled={submitting}
-                                    title="Decline Assignment"
-                                    className="px-2 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
                                   >
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    <span>Decline</span>
+                                    <TrendingUp className="w-3.5 h-3.5" />
+                                    <span>Start Job</span>
                                   </button>
                                 </>
                               )}
 
-                              {/* 2. ACCEPTED -> Start Work */}
+                              {/* ACCEPTED -> Start Job */}
                               {wo.status === "ACCEPTED" && (
                                 <button
                                   onClick={() => handleStartWork(wo)}
                                   disabled={submitting}
-                                  title="Commence work on-site"
-                                  className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+                                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
                                 >
-                                  <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                                    <polygon points="5 3 19 12 5 21 5 3" />
-                                  </svg>
-                                  <span>Start Work</span>
+                                  <TrendingUp className="w-3.5 h-3.5" />
+                                  <span>Start Job (On-Site)</span>
                                 </button>
                               )}
 
-                              {/* 3. IN_PROGRESS -> Pause or Complete */}
+                              {/* IN_PROGRESS -> Complete Job or Pause */}
                               {wo.status === "IN_PROGRESS" && (
                                 <>
                                   <button
                                     onClick={() => handleOpenPauseModal(wo)}
                                     disabled={submitting}
-                                    title="Pause work order"
-                                    className="px-2.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+                                    className="px-2.5 py-1.5 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
                                   >
-                                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                                      <rect x="6" y="4" width="4" height="16"></rect>
-                                      <rect x="14" y="4" width="4" height="16"></rect>
-                                    </svg>
+                                    <Clock className="w-3 h-3" />
                                     <span>Pause</span>
                                   </button>
                                   <button
                                     onClick={() => handleOpenCompleteModal(wo)}
                                     disabled={submitting}
-                                    title="Complete work with notes"
-                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 flex items-center gap-1.5 cursor-pointer"
                                   >
                                     <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span>Complete</span>
+                                    <span>Complete Job</span>
                                   </button>
                                 </>
                               )}
 
-                              {/* 4. PAUSED -> Resume or Complete */}
+                              {/* PAUSED -> Resume */}
                               {wo.status === "PAUSED" && (
-                                <>
-                                  <button
-                                    onClick={() => handleResumeWork(wo)}
-                                    disabled={submitting}
-                                    title="Resume work order"
-                                    className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span>Resume</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenCompleteModal(wo)}
-                                    disabled={submitting}
-                                    title="Complete work with notes"
-                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span>Complete</span>
-                                  </button>
-                                </>
+                                <button
+                                  onClick={() => handleResumeWork(wo)}
+                                  disabled={submitting}
+                                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <TrendingUp className="w-3.5 h-3.5" />
+                                  <span>Resume Work</span>
+                                </button>
                               )}
 
-                              {/* 5. COMPLETED -> Done */}
+                              {/* COMPLETED */}
                               {wo.status === "COMPLETED" && (
-                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  Pending Sign-Off
-                                </span>
-                              )}
-
-                              {/* 6. CLOSED -> Closed */}
-                              {wo.status === "CLOSED" && (
-                                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 inline-flex items-center gap-1">
-                                  <ShieldCheck className="w-3 h-3" />
-                                  Closed
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Pending Sign-Off</span>
                                 </span>
                               )}
 
                               <button
                                 onClick={() => handleOpenView(wo)}
-                                title="View Details & Timeline"
+                                title="View details"
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                               >
                                 <Eye className="w-4 h-4" />
@@ -1742,36 +1569,20 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                             // DISPATCHER & ADMIN ACTIONS
                             // ----------------------------------------------------
                             <>
-                              {/* If COMPLETED -> Close Sign-off action */}
                               {wo.status === "COMPLETED" && (
                                 <button
                                   onClick={() => handleOpenCloseModal(wo)}
                                   disabled={submitting}
-                                  title="Review & Officially Close Work Order"
-                                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+                                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                  <span>Close Order</span>
-                                </button>
-                              )}
-
-                              {/* If Cancellable (OPEN, ASSIGNED, ACCEPTED, PAUSED) */}
-                              {["OPEN", "ASSIGNED", "ACCEPTED", "PAUSED"].includes(wo.status) && (
-                                <button
-                                  onClick={() => handleOpenCancelModal(wo)}
-                                  disabled={submitting}
-                                  title="Cancel Work Order"
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                  </svg>
+                                  <span>Sign-Off & Close</span>
                                 </button>
                               )}
 
                               <button
                                 onClick={() => handleOpenView(wo)}
-                                title="View Work Order & Timeline"
+                                title="View details"
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                               >
                                 <Eye className="w-4 h-4" />
@@ -1780,7 +1591,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                               {wo.status !== "CLOSED" && wo.status !== "CANCELLED" && (
                                 <button
                                   onClick={() => handleOpenEdit(wo)}
-                                  title="Edit / Reassign Work Order"
+                                  title="Edit work order"
                                   className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
                                 >
                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1789,15 +1600,17 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                                 </button>
                               )}
 
-                              <button
-                                onClick={() => handleOpenDelete(wo)}
-                                title="Delete Work Order"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                              {role === "ADMIN" && (
+                                <button
+                                  onClick={() => handleOpenDelete(wo)}
+                                  title="Delete work order"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
@@ -1810,7 +1623,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination Controls */}
         {!loading && workOrders.length > 0 && (
           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
             <div>
@@ -1839,10 +1652,11 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                       {showEllipsis && <span className="px-1 text-slate-400">...</span>}
                       <button
                         onClick={() => setPage(pageNum)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${pagination.page === pageNum
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          pagination.page === pageNum
                             ? "bg-blue-600 text-white shadow-xs"
                             : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
+                        }`}
                       >
                         {pageNum}
                       </button>
@@ -1863,22 +1677,23 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       </div>
 
       {/* ========================================================= */}
-      {/* 1. CREATE WORK ORDER MODAL (Dispatcher & Admin Only) */}
+      {/* 6. CREATE WORK ORDER MODAL (Searchable Pickers & Grouping) */}
       {/* ========================================================= */}
       {showCreateModal && role !== "TECHNICIAN" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-xs">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Dispatch New Work Order</h3>
-                  <p className="text-xs text-slate-500">Schedule customer job and assign field technician</p>
+                  <p className="text-xs text-slate-500">Step 3 of Workflow: Link customer, assign tech & schedule</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowCreateModal(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
@@ -1887,164 +1702,143 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             </div>
 
             <form onSubmit={handleCreateWorkOrder} className="space-y-4 text-xs">
-              {/* Title */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Work Order Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Cisco Catalyst Core Switch Migration & Splicing"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
-                />
-                {formErrors.title && <span className="text-[11px] text-rose-600 block">{formErrors.title}</span>}
-              </div>
-
-              {/* Customer and Technician Selectors */}
-              <div className="grid sm:grid-cols-2 gap-3.5">
-                {/* Customer Selector */}
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Client Customer *</label>
-                  <select
-                    required
-                    value={formData.customerId}
-                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${formErrors.customerId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                      }`}
-                  >
-                    <option value="">Select customer...</option>
-                    {customersList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.company ? `(${c.company})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {formErrors.customerId && (
-                    <span className="text-[11px] text-rose-600 block">{formErrors.customerId}</span>
-                  )}
-                </div>
-
-                {/* Assigned Technician Selector */}
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Assign Field Technician</label>
-                  <select
-                    value={formData.technicianId}
-                    onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all cursor-pointer font-medium ${formErrors.technicianId ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                      }`}
-                  >
-                    <option value="">Leave Unassigned (Open Pool)</option>
-                    <optgroup label="Available Now (Recommended)">
-                      {techniciansList
-                        .filter((t) => t.status === "AVAILABLE")
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            ✓ {t.name} - {t.specialization || "Field Tech"} (Available)
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label="Busy / On Active Job">
-                      {techniciansList
-                        .filter((t) => t.status === "BUSY")
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            ⏳ {t.name} - {t.specialization || "Field Tech"} (Busy)
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label="Offline / Off-Duty (Not Dispatchable)">
-                      {techniciansList
-                        .filter((t) => t.status === "OFF")
-                        .map((t) => (
-                          <option key={t.id} value={t.id} disabled>
-                            ✕ {t.name} (Offline / Off-Duty)
-                          </option>
-                        ))}
-                    </optgroup>
-                  </select>
-                  {formErrors.technicianId && (
-                    <span className="text-[11px] text-rose-600 block">{formErrors.technicianId}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Priority & Status */}
-              <div className="grid sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Priority Level *</label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as PriorityType })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all cursor-pointer font-medium"
-                  >
-                    <option value="LOW">Low (Standard Maintenance)</option>
-                    <option value="MEDIUM">Medium (Scheduled Upgrade)</option>
-                    <option value="HIGH">High (SLA Expedited)</option>
-                    <option value="URGENT">Urgent (Outage / Emergency)</option>
-                  </select>
+              {/* SECTION 1: JOB SPECIFICATIONS */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-blue-600" />
+                  <span>1. Job Specifications</span>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Scheduled Date & Time</label>
+                  <label className="font-bold text-slate-700">Work Order Title *</label>
                   <input
-                    type="datetime-local"
-                    value={formData.scheduledAt}
-                    onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all font-medium"
+                    type="text"
+                    required
+                    placeholder="e.g. Cisco Catalyst Core Switch Migration & Splicing"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-900 outline-none transition-all ${
+                      formErrors.title ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
                   />
+                  {formErrors.title && <span className="text-[10px] text-rose-600 block">{formErrors.title}</span>}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Scope of Work & Technical Requirements *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Provide exact instructions, required equipment, building entry points..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-900 outline-none transition-all resize-none ${
+                      formErrors.description ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
+                  />
+                  {formErrors.description && (
+                    <span className="text-[10px] text-rose-600 block">{formErrors.description}</span>
+                  )}
+                </div>
+
+                {/* Priority Selector Buttons */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700">Priority Level *</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["LOW", "MEDIUM", "HIGH", "URGENT"] as PriorityType[]).map((p) => {
+                      const isSelected = formData.priority === p;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, priority: p })}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                            isSelected
+                              ? p === "URGENT"
+                                ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                                : p === "HIGH"
+                                ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                : p === "MEDIUM"
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                : "bg-slate-700 text-white border-slate-700 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Job Description & Scope of Work *</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Detailed breakdown of technician requirements, site access instructions, equipment IDs..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all resize-none ${formErrors.description ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
+              {/* SECTION 2: CUSTOMER SELECTION & QUICK CREATE */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-600" />
+                  <span>2. Client Customer & Site Location</span>
+                </div>
+
+                <SearchableCustomerSelect
+                  customers={customersList}
+                  selectedId={formData.customerId}
+                  onChange={(id) => setFormData({ ...formData, customerId: id })}
+                  onOpenNewCustomerModal={() => setShowQuickCustomerModal(true)}
+                  error={formErrors.customerId}
                 />
-                {formErrors.description && (
-                  <span className="text-[11px] text-rose-600 block">{formErrors.description}</span>
-                )}
               </div>
 
-              {/* Special Dispatch Notes */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Special Dispatch / Security Access Notes</label>
-                <input
-                  type="text"
-                  placeholder="Badge required at Guard Post #2, parking in loading dock..."
-                  value={formData.completionNotes}
-                  onChange={(e) => setFormData({ ...formData, completionNotes: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all"
-                />
+              {/* SECTION 3: TECHNICIAN ASSIGNMENT & SCHEDULE */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-blue-600" />
+                  <span>3. Dispatch Assignment & Scheduling</span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3.5">
+                  <SearchableTechnicianSelect
+                    technicians={techniciansList}
+                    selectedId={formData.technicianId}
+                    onChange={(id) => setFormData({ ...formData, technicianId: id })}
+                    error={formErrors.technicianId}
+                  />
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Scheduled SLA Date & Time</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.scheduledAt}
+                      onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none focus:border-blue-600 font-medium"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                  {submitting ? (
+                    <span>Dispatching Order...</span>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Confirm & Dispatch Work Order</span>
+                    </>
                   )}
-                  <span>{submitting ? "Dispatching..." : "Dispatch Work Order"}</span>
                 </button>
               </div>
             </form>
@@ -2053,24 +1847,23 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       )}
 
       {/* ========================================================= */}
-      {/* 2. EDIT WORK ORDER MODAL (Dispatcher & Admin) */}
+      {/* 7. EDIT WORK ORDER MODAL */}
       {/* ========================================================= */}
       {showEditModal && selectedWorkOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Wrench className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Update Work Order</h3>
-                  <p className="text-xs text-slate-500">Edit details, reassign technician, and reschedule SLA</p>
+                  <h3 className="text-lg font-bold text-slate-900">Update Work Order Details</h3>
+                  <p className="text-xs text-slate-500">Edit scope, reassign technician, or adjust priority</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedWorkOrder(null);
@@ -2082,85 +1875,57 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             </div>
 
             <form onSubmit={handleUpdateWorkOrder} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Work Order Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all ${formErrors.title ? "border-rose-300 focus:border-rose-500" : "border-slate-200 focus:border-blue-600"
-                    }`}
-                />
-                {formErrors.title && <span className="text-[11px] text-rose-600 block">{formErrors.title}</span>}
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-3.5">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Client Customer *</label>
-                  <select
+                  <label className="font-bold text-slate-700">Work Order Title *</label>
+                  <input
+                    type="text"
                     required
-                    value={formData.customerId}
-                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all cursor-pointer font-medium"
-                  >
-                    {customersList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.company ? `(${c.company})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white text-slate-900 outline-none transition-all ${
+                      formErrors.title ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
+                  />
+                  {formErrors.title && <span className="text-[10px] text-rose-600 block">{formErrors.title}</span>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Assigned Technician</label>
-                  <select
-                    value={formData.technicianId}
-                    onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all cursor-pointer font-medium"
-                  >
-                    <option value="">Leave Unassigned (Open Pool)</option>
-                    <optgroup label="Available Now">
-                      {techniciansList
-                        .filter((t) => t.status === "AVAILABLE")
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            ✓ {t.name} ({t.specialization || "Available"})
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label="Busy">
-                      {techniciansList
-                        .filter((t) => t.status === "BUSY")
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            ⏳ {t.name} (Busy)
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label="Offline">
-                      {techniciansList
-                        .filter((t) => t.status === "OFF")
-                        .map((t) => (
-                          <option key={t.id} value={t.id} disabled>
-                            ✕ {t.name} (Offline)
-                          </option>
-                        ))}
-                    </optgroup>
-                  </select>
-                  {formErrors.technicianId && (
-                    <span className="text-[11px] text-rose-600 block">{formErrors.technicianId}</span>
-                  )}
+                  <label className="font-bold text-slate-700">Scope of Work *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 outline-none focus:border-blue-600 resize-none"
+                  />
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3.5">
+                <SearchableCustomerSelect
+                  customers={customersList}
+                  selectedId={formData.customerId}
+                  onChange={(id) => setFormData({ ...formData, customerId: id })}
+                  onOpenNewCustomerModal={() => setShowQuickCustomerModal(true)}
+                  error={formErrors.customerId}
+                />
+
+                <SearchableTechnicianSelect
+                  technicians={techniciansList}
+                  selectedId={formData.technicianId}
+                  onChange={(id) => setFormData({ ...formData, technicianId: id })}
+                  error={formErrors.technicianId}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Priority Level *</label>
+                  <label className="font-bold text-slate-700">Priority Level</label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value as PriorityType })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all cursor-pointer font-medium"
+                    className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-blue-600 font-bold"
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -2175,40 +1940,15 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                     type="datetime-local"
                     value={formData.scheduledAt}
                     onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all font-medium"
+                    className="w-full px-3 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-blue-600 font-medium"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Description *</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all resize-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Technician Completion Notes</label>
-                <textarea
-                  rows={2}
-                  placeholder="Resolution summary, equipment serial numbers, sign-off notes..."
-                  value={formData.completionNotes}
-                  onChange={(e) => setFormData({ ...formData, completionNotes: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600 transition-all resize-none"
-                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedWorkOrder(null);
-                  }}
+                  onClick={() => setShowEditModal(false)}
                   className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
                 >
                   Cancel
@@ -2216,14 +1956,9 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
                 >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Updating..." : "Update Work Order"}</span>
+                  {submitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -2232,159 +1967,32 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       )}
 
       {/* ========================================================= */}
-      {/* 3. TECHNICIAN: DECLINE / REJECT ASSIGNMENT MODAL */}
+      {/* 8. VIEW DETAILS & AUDIT TIMELINE MODAL */}
       {/* ========================================================= */}
-      {showRejectModal && activeTargetOrder && (
+      {showViewModal && selectedWorkOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Decline Work Order</h3>
-                <p className="text-xs text-slate-500">Return assignment back to Dispatcher</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmitReject} className="space-y-4 text-xs">
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl space-y-1">
-                <p className="font-bold text-rose-900 text-xs">Job: {activeTargetOrder.title}</p>
-                <p className="text-[11px] text-rose-700">Client: {activeTargetOrder.customer?.name}</p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
-                  Reason for Declining (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. Schedule conflict with emergency job, specialized tool required..."
-                  value={actionNotesInput}
-                  onChange={(e) => setActionNotesInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-rose-600 transition-all resize-none text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRejectModal(false);
-                    setActiveTargetOrder(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Declining..." : "Confirm Decline"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 4. TECHNICIAN: PAUSE WORK MODAL */}
-      {/* ========================================================= */}
-      {showPauseModal && activeTargetOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Pause Work Order</h3>
-                <p className="text-xs text-slate-500">Temporarily suspend on-site service</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmitPause} className="space-y-4 text-xs">
-              <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl space-y-1">
-                <p className="font-bold text-orange-900 text-xs">Job: {activeTargetOrder.title}</p>
-                <p className="text-[11px] text-orange-700">Client: {activeTargetOrder.customer?.name}</p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
-                  Pause Reason & Next Steps *
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="e.g. Waiting for replacement optical transceiver, site power shutdown till 2 PM..."
-                  value={actionNotesInput}
-                  onChange={(e) => setActionNotesInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-orange-600 transition-all resize-none text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPauseModal(false);
-                    setActiveTargetOrder(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-md shadow-orange-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Pausing..." : "Pause Work Order"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 5. TECHNICIAN: COMPLETE JOB MODAL (Mandatory Notes) */}
-      {/* ========================================================= */}
-      {showCompleteModal && activeTargetOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Complete Job & Submit Sign-Off</h3>
-                  <p className="text-xs text-slate-500">{activeTargetOrder.title}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${getPriorityBadgeClass(selectedWorkOrder.priority)}`}>
+                      {selectedWorkOrder.priority}
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 truncate">{selectedWorkOrder.title}</h3>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono">ID: {selectedWorkOrder.id}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
-                  setShowCompleteModal(false);
-                  setActiveTargetOrder(null);
+                  setShowViewModal(false);
+                  setSelectedWorkOrder(null);
                 }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
@@ -2392,451 +2000,125 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               </button>
             </div>
 
-            <form onSubmit={handleSubmitCompletion} className="space-y-4 text-xs">
-              <div className="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-1">
-                <p className="font-bold text-emerald-900 text-xs">Client: {activeTargetOrder.customer?.name}</p>
-                <p className="text-[11px] text-emerald-700">
-                  Address: {activeTargetOrder.customer?.address}, {activeTargetOrder.customer?.city || ""}
-                </p>
+            {/* Lifecycle Progress Stepper */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Work Order Lifecycle Progression
               </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700 block items-center justify-between">
-                  <span>Technician Resolution & Completion Notes *</span>
-                  <span className="text-[10px] text-emerald-700 font-semibold">Mandatory (min 5 chars)</span>
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Describe the work completed, replacement parts installed, meter readings, test results, or customer sign-off confirmation..."
-                  value={completionNotesInput}
-                  onChange={(e) => setCompletionNotesInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-emerald-600 transition-all resize-none text-xs font-medium"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCompleteModal(false);
-                    setActiveTargetOrder(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Submitting..." : "Complete & Submit"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 6. DISPATCHER: CLOSE WORK ORDER MODAL */}
-      {/* ========================================================= */}
-      {showCloseModal && activeTargetOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Close & Sign Off Work Order</h3>
-                <p className="text-xs text-slate-500">Final verification & administrative closure</p>
-              </div>
+              <LifecycleProgressBar status={selectedWorkOrder.status} />
             </div>
 
-            <form onSubmit={handleSubmitClose} className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
-                <p className="font-bold text-slate-900 text-xs">{activeTargetOrder.title}</p>
-                <p className="text-[11px] text-slate-600">Client: {activeTargetOrder.customer?.name}</p>
-                {activeTargetOrder.completionNotes && (
-                  <p className="text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-200 mt-2">
-                    <span className="font-bold block">Technician Notes:</span>
-                    {activeTargetOrder.completionNotes}
-                  </p>
+            {/* Customer and Technician Cards */}
+            <div className="grid sm:grid-cols-2 gap-3 text-xs">
+              {/* Customer Info Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Client Customer</span>
+                </div>
+                <div className="font-bold text-slate-900 text-sm">{selectedWorkOrder.customer?.name}</div>
+                {selectedWorkOrder.customer?.company && (
+                  <div className="text-slate-600 font-medium">{selectedWorkOrder.customer.company}</div>
+                )}
+                <div className="text-[11px] text-slate-500 flex items-center gap-1 pt-1">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{selectedWorkOrder.customer?.address || "Address not provided"}</span>
+                </div>
+                {selectedWorkOrder.customer?.phone && (
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{selectedWorkOrder.customer.phone}</span>
+                  </div>
                 )}
               </div>
 
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
-                  Dispatcher Verification / Sign-Off Remarks (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. Invoice prepared, customer signed off on-site, SLA verified..."
-                  value={actionNotesInput}
-                  onChange={(e) => setActionNotesInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-slate-800 transition-all resize-none text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCloseModal(false);
-                    setActiveTargetOrder(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-bold shadow-md shadow-slate-900/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Closing..." : "Close & Archive Order"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 7. DISPATCHER: CANCEL WORK ORDER MODAL */}
-      {/* ========================================================= */}
-      {showCancelModal && activeTargetOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Cancel Work Order</h3>
-                <p className="text-xs text-slate-500">Cancel active dispatch and release technician</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmitCancel} className="space-y-4 text-xs">
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl space-y-1">
-                <p className="font-bold text-rose-900 text-xs">Job: {activeTargetOrder.title}</p>
-                <p className="text-[11px] text-rose-700">Client: {activeTargetOrder.customer?.name}</p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
-                  Cancellation Reason & Justification *
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="e.g. Customer cancelled appointment, site inaccessible, duplicate ticket..."
-                  value={actionNotesInput}
-                  onChange={(e) => setActionNotesInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-rose-600 transition-all resize-none text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCancelModal(false);
-                    setActiveTargetOrder(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  {submitting && (
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                  <span>{submitting ? "Cancelling..." : "Confirm Cancellation"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 8. VIEW WORK ORDER DETAILS & STATUS TIMELINE MODAL */}
-      {/* ========================================================= */}
-      {showViewModal && selectedWorkOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto text-xs">
-            {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-              <div className="space-y-1 pr-4">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${getPriorityBadgeClass(
-                      selectedWorkOrder.priority
-                    )}`}
-                  >
-                    {selectedWorkOrder.priority}
-                  </span>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${getStatusBadgeClass(
-                      selectedWorkOrder.status
-                    )}`}
-                  >
-                    {formatStatusLabel(selectedWorkOrder.status)}
-                  </span>
-                  {isOverdue(selectedWorkOrder) && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
-                      Overdue SLA
-                    </span>
-                  )}
+              {/* Technician Info Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Wrench className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Assigned Technician</span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 leading-snug">
-                  {selectedWorkOrder.title}
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowViewModal(false);
-                  setSelectedWorkOrder(null);
-                }}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-              <span className="text-[11px] font-bold text-slate-700">Scope of Work:</span>
-              <p className="text-slate-600 leading-relaxed">{selectedWorkOrder.description}</p>
-            </div>
-
-            {/* Customer & Technician 2-Column Card */}
-            <div className="grid sm:grid-cols-2 gap-3.5">
-              {/* Customer Box */}
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block items-center gap-1">
-                  <Building2 className="w-3 h-3 text-slate-400" />
-                  Client Information
-                </span>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">{selectedWorkOrder.customer?.name}</h4>
-                  {selectedWorkOrder.customer?.company && (
-                    <p className="text-[11px] text-slate-600 font-semibold">{selectedWorkOrder.customer.company}</p>
-                  )}
-                </div>
-                <div className="space-y-1 text-slate-500 text-[11px]">
-                  <p className="flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{selectedWorkOrder.customer?.address}, {selectedWorkOrder.customer?.city || ""}</span>
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Tel:</span>
-                    <a href={`tel:${selectedWorkOrder.customer?.phone}`} className="hover:text-blue-600 font-medium">
-                      {selectedWorkOrder.customer?.phone}
-                    </a>
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Email:</span>
-                    <a href={`mailto:${selectedWorkOrder.customer?.email}`} className="hover:text-blue-600 font-medium">
-                      {selectedWorkOrder.customer?.email}
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              {/* Technician Box */}
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block items-center gap-1">
-                  <Wrench className="w-3 h-3 text-slate-400" />
-                  Assigned Field Engineer
-                </span>
                 {selectedWorkOrder.technician ? (
                   <>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 text-white font-bold text-xs flex items-center justify-center">
-                        {selectedWorkOrder.technician.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2)}
+                    <div className="font-bold text-slate-900 text-sm">{selectedWorkOrder.technician.name}</div>
+                    <div className="text-slate-600 font-medium">{selectedWorkOrder.technician.specialization || "Field Tech"}</div>
+                    {selectedWorkOrder.technician.serviceArea && (
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1 pt-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{selectedWorkOrder.technician.serviceArea}</span>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">{selectedWorkOrder.technician.name}</h4>
-                        <span className="text-[10px] font-semibold text-blue-600">
-                          {selectedWorkOrder.technician.specialization || "Field Specialist"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-slate-500 text-[11px]">
-                      <p className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Area:</span>
-                        <span>{selectedWorkOrder.technician.serviceArea || "Metro Area"}</span>
-                      </p>
-                      <p className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Status:</span>
-                        <span
-                          className={`font-bold ${selectedWorkOrder.technician.status === "AVAILABLE"
-                              ? "text-emerald-600"
-                              : "text-amber-600"
-                            }`}
-                        >
-                          {selectedWorkOrder.technician.status}
-                        </span>
-                      </p>
-                    </div>
+                    )}
                   </>
                 ) : (
-                  <div className="py-4 text-center text-slate-400">
-                    <User className="w-6 h-6 mx-auto mb-1 text-slate-300" />
-                    <span>No technician assigned yet.</span>
+                  <div className="text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-xs font-bold">
+                    Currently unassigned in open dispatch pool.
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Schedule & Notes */}
-            <div className="grid sm:grid-cols-2 gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Scheduled At</span>
-                <span className="font-bold text-slate-800 block mt-0.5">
-                  {selectedWorkOrder.scheduledAt
-                    ? new Date(selectedWorkOrder.scheduledAt).toLocaleString()
-                    : "Not scheduled"}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Created At</span>
-                <span className="font-bold text-slate-800 block mt-0.5">
-                  {new Date(selectedWorkOrder.createdAt).toLocaleString()}
-                </span>
-              </div>
-              {selectedWorkOrder.completedAt && (
-                <div className="sm:col-span-2">
-                  <span className="text-[10px] font-bold uppercase text-emerald-600 block">Completed On</span>
-                  <span className="font-bold text-emerald-800 block mt-0.5">
-                    {new Date(selectedWorkOrder.completedAt).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {selectedWorkOrder.completionNotes && (
-                <div className="sm:col-span-2">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Resolution & Notes</span>
-                  <p className="text-slate-700 mt-0.5 leading-relaxed">{selectedWorkOrder.completionNotes}</p>
-                </div>
-              )}
+            {/* Description */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Scope of Work</div>
+              <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{selectedWorkOrder.description}</p>
             </div>
 
-            {/* StatusLog Complete Timeline History */}
-            <div className="space-y-3 pt-2">
-              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-blue-600" />
-                Immutable Status Activity Log ({selectedWorkOrder.statusLogs?.length || 0} transitions)
-              </span>
+            {/* Completion Notes (if completed) */}
+            {selectedWorkOrder.completionNotes && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5 text-xs">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Technician Completion Notes & Resolution</span>
+                </div>
+                <p className="text-emerald-950 font-medium whitespace-pre-wrap">{selectedWorkOrder.completionNotes}</p>
+                {selectedWorkOrder.completedAt && (
+                  <div className="text-[10px] text-emerald-700 pt-1">
+                    Completed on {new Date(selectedWorkOrder.completedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            )}
 
-              {selectedWorkOrder.statusLogs && selectedWorkOrder.statusLogs.length > 0 ? (
-                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
-                  {selectedWorkOrder.statusLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="p-3 rounded-2xl border border-slate-200 bg-white shadow-xs text-xs space-y-1.5 relative overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${getStatusBadgeClass(
-                              log.fromStatus
-                            )}`}
-                          >
-                            {formatStatusLabel(log.fromStatus)}
-                          </span>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${getStatusBadgeClass(
-                              log.toStatus
-                            )}`}
-                          >
-                            {formatStatusLabel(log.toStatus)}
-                          </span>
+            {/* Status Log & Audit History Timeline */}
+            <div className="space-y-3 pt-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span>Live Audit Trail & Status History</span>
+              </div>
+
+              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                {selectedWorkOrder.statusLogs && selectedWorkOrder.statusLogs.length > 0 ? (
+                  selectedWorkOrder.statusLogs.map((log) => (
+                    <div key={log.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-slate-900">{log.fromStatus}</span>
+                          <ArrowRight className="w-3 h-3 text-slate-400" />
+                          <span className="font-extrabold text-blue-600">{log.toStatus}</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400">
+                        <span className="text-[10px] text-slate-400 font-medium">
                           {new Date(log.changedAt).toLocaleString()}
                         </span>
                       </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>
-                          Action by:{" "}
-                          <span className="font-bold text-slate-800">
-                            {log.changedBy?.name || log.changedBy?.email || "System"}
-                          </span>
-                        </span>
-                      </div>
-
-                      {log.notes && (
-                        <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-[11px] text-slate-600 flex items-start gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                          <span>{log.notes}</span>
-                        </div>
+                      <div className="text-[11px] text-slate-600">{log.notes || "Status update"}</div>
+                      {log.changedBy && (
+                        <div className="text-[10px] text-slate-400">Actor: {log.changedBy.name || log.changedBy.email}</div>
                       )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center text-slate-400">
-                  Initial dispatch record recorded.
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="text-xs text-slate-400 italic">No transition logs recorded yet.</div>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              {role !== "TECHNICIAN" && selectedWorkOrder.status !== "CLOSED" && selectedWorkOrder.status !== "CANCELLED" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowViewModal(false);
-                    handleOpenEdit(selectedWorkOrder);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span>Edit Work Order</span>
-                </button>
-              )}
-
+            <div className="flex items-center justify-end pt-3 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => {
-                  setShowViewModal(false);
-                  setSelectedWorkOrder(null);
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                onClick={() => setShowViewModal(false)}
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer"
               >
-                Close
+                Close View
               </button>
             </div>
           </div>
@@ -2844,49 +2126,196 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
       )}
 
       {/* ========================================================= */}
-      {/* 9. DELETE WORK ORDER CONFIRMATION MODAL */}
+      {/* 9. QUICK CUSTOMER CREATION MODAL */}
       {/* ========================================================= */}
-      {showDeleteModal && selectedWorkOrder && role !== "TECHNICIAN" && (
+      <QuickCustomerModal
+        isOpen={showQuickCustomerModal}
+        onClose={() => setShowQuickCustomerModal(false)}
+        onCustomerCreated={handleQuickCustomerCreated}
+      />
+
+      {/* ========================================================= */}
+      {/* 10. TECHNICIAN COMPLETION NOTES & CHECKLIST MODAL */}
+      {/* ========================================================= */}
+      {activeTargetOrder && (
+        <CompletionNotesModal
+          isOpen={showCompleteModal}
+          onClose={() => {
+            setShowCompleteModal(false);
+            setActiveTargetOrder(null);
+          }}
+          workOrderTitle={activeTargetOrder.title}
+          customerName={activeTargetOrder.customer?.name}
+          technicianName={activeTargetOrder.technician?.name || "Self"}
+          initialNotes={activeTargetOrder.completionNotes || ""}
+          onSubmit={handleSubmitCompletionWithNotes}
+          submitting={submitting}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 11. PAUSE MODAL */}
+      {/* ========================================================= */}
+      {showPauseModal && activeTargetOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Delete Work Order</h3>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                Are you sure you want to remove work order{" "}
-                <span className="font-bold text-slate-900">&ldquo;{selectedWorkOrder.title}&rdquo;</span>? This will
-                permanently clear all dispatch records and history logs.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 text-xs">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Pause Work Order</h3>
+                  <p className="text-xs text-slate-500">Temporarily hold job execution</p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedWorkOrder(null);
-                }}
-                className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                onClick={() => setShowPauseModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPause} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Reason for Pausing (e.g. Awaiting Parts)</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Need Cat6A shielded spool from central inventory..."
+                  value={actionNotesInput}
+                  onChange={(e) => setActionNotesInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-orange-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPauseModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-md shadow-orange-600/20"
+                >
+                  {submitting ? "Pausing..." : "Confirm Pause"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 12. CLOSE SIGN-OFF MODAL (Dispatcher) */}
+      {/* ========================================================= */}
+      {showCloseModal && activeTargetOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Sign-Off & Archive Work Order</h3>
+                  <p className="text-xs text-slate-500">Step 5: Final review and official closure</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitClose} className="space-y-3 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <div className="font-bold text-slate-900">{activeTargetOrder.title}</div>
+                <div className="text-slate-500 text-[11px]">Client: {activeTargetOrder.customer?.name}</div>
+                {activeTargetOrder.completionNotes && (
+                  <div className="text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-xl mt-2 font-medium">
+                    Notes: {activeTargetOrder.completionNotes}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Dispatcher Sign-Off Notes</label>
+                <input
+                  type="text"
+                  placeholder="Verified customer satisfaction, billing approved..."
+                  value={actionNotesInput}
+                  onChange={(e) => setActionNotesInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 outline-none focus:border-blue-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCloseModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-md"
+                >
+                  {submitting ? "Closing..." : "Sign-Off & Archive"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 13. DELETE CONFIRMATION MODAL */}
+      {/* ========================================================= */}
+      {showDeleteModal && selectedWorkOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Delete Work Order</h3>
+                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-slate-900">"{selectedWorkOrder.title}"</strong>? All associated status history will be removed.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-600 font-bold text-xs"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={submitting}
                 onClick={handleDeleteWorkOrder}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-md shadow-rose-600/20 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                disabled={submitting}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20"
               >
-                {submitting && (
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                )}
-                <span>{submitting ? "Deleting..." : "Confirm Delete"}</span>
+                {submitting ? "Deleting..." : "Permanently Delete"}
               </button>
             </div>
           </div>

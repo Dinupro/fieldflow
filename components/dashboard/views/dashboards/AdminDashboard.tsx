@@ -26,6 +26,8 @@ import {
   Clock,
 } from "lucide-react";
 
+import WorkOrderWorkflowGuide from "@/components/dashboard/WorkOrderWorkflowGuide";
+
 interface AdminDashboardProps {
   data: any;
   onNavigate: (tab: SidebarItemKey) => void;
@@ -132,6 +134,14 @@ export default function AdminDashboard({
           </button>
         </div>
       </div>
+
+      {/* Operational Workflow Guide Banner */}
+      <WorkOrderWorkflowGuide
+        role="ADMIN"
+        onQuickCreateClick={() => onNavigate("work-orders")}
+        onNavigateCustomers={() => onNavigate("customers")}
+        onNavigateTechnicians={() => onNavigate("technicians")}
+      />
 
       {/* 2. Critical SLA Alerts Banner */}
       {alerts.length > 0 && (

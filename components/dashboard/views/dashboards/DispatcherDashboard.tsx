@@ -24,6 +24,8 @@ import {
   Radio,
 } from "lucide-react";
 
+import WorkOrderWorkflowGuide from "@/components/dashboard/WorkOrderWorkflowGuide";
+
 interface DispatcherDashboardProps {
   data: any;
   onNavigate: (tab: SidebarItemKey) => void;
@@ -139,6 +141,14 @@ export default function DispatcherDashboard({
           </button>
         </div>
       </div>
+
+      {/* Workflow Guide Banner */}
+      <WorkOrderWorkflowGuide
+        role="DISPATCHER"
+        onQuickCreateClick={() => onNavigate("work-orders")}
+        onNavigateCustomers={() => onNavigate("customers")}
+        onNavigateTechnicians={() => onNavigate("technicians")}
+      />
 
       {/* 2. Urgent Dispatch & SLA Alerts */}
       {alerts.length > 0 && (
