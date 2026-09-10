@@ -54,15 +54,14 @@ export default function LifecycleProgressBar({ status, compact = false }: Lifecy
             <div
               key={s.status}
               title={`${s.label}: ${isCurrent ? (isPaused ? "Paused" : "Active") : isCompleted ? "Done" : "Upcoming"}`}
-              className={`h-1.5 rounded-full transition-all ${
-                isCurrent
+              className={`h-1.5 rounded-full transition-all ${isCurrent
                   ? isPaused
                     ? "w-4 bg-orange-500 animate-pulse"
                     : "w-4 bg-blue-600 animate-pulse"
                   : isCompleted
-                  ? "w-2 bg-emerald-500"
-                  : "w-2 bg-slate-200"
-              }`}
+                    ? "w-2 bg-emerald-500"
+                    : "w-2 bg-slate-200"
+                }`}
             />
           );
         })}
@@ -75,10 +74,10 @@ export default function LifecycleProgressBar({ status, compact = false }: Lifecy
       <div className="flex items-center justify-between relative">
         {/* Background track */}
         <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 bg-slate-100 rounded-full z-0" />
-        
+
         {/* Active progress track */}
         <div
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full z-0 transition-all duration-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-1 bg-linear-to-r from-blue-500 to-emerald-500 rounded-full z-0 transition-all duration-500"
           style={{
             width: `${Math.min(100, Math.max(0, ((currentOrder - 1) / (STEPS.length - 1)) * 100))}%`,
           }}
@@ -91,18 +90,17 @@ export default function LifecycleProgressBar({ status, compact = false }: Lifecy
           return (
             <div key={s.status} className="flex flex-col items-center relative z-10">
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
-                  isCompleted
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${isCompleted
                     ? "bg-emerald-500 text-white shadow-xs"
                     : isCurrent
-                    ? isPaused
-                      ? "bg-orange-500 text-white ring-4 ring-orange-100 animate-pulse"
-                      : "bg-blue-600 text-white ring-4 ring-blue-100 shadow-md shadow-blue-600/30"
-                    : "bg-white border-2 border-slate-200 text-slate-400"
-                }`}
+                      ? isPaused
+                        ? "bg-orange-500 text-white ring-4 ring-orange-100 animate-pulse"
+                        : "bg-blue-600 text-white ring-4 ring-blue-100 shadow-md shadow-blue-600/30"
+                      : "bg-white border-2 border-slate-200 text-slate-400"
+                  }`}
               >
                 {isCompleted ? (
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <Check className="w-3.5 h-3.5 stroke-3" />
                 ) : isCurrent ? (
                   isPaused ? (
                     <Clock className="w-3 h-3" />
@@ -114,15 +112,14 @@ export default function LifecycleProgressBar({ status, compact = false }: Lifecy
                 )}
               </div>
               <span
-                className={`text-[10px] font-bold mt-1.5 transition-colors whitespace-nowrap ${
-                  isCurrent
+                className={`text-[10px] font-bold mt-1.5 transition-colors whitespace-nowrap ${isCurrent
                     ? isPaused
                       ? "text-orange-600 font-extrabold"
                       : "text-blue-600 font-extrabold"
                     : isCompleted
-                    ? "text-emerald-700"
-                    : "text-slate-400"
-                }`}
+                      ? "text-emerald-700"
+                      : "text-slate-400"
+                  }`}
               >
                 {s.label}
                 {isCurrent && isPaused && " (Paused)"}

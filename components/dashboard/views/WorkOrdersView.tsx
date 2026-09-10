@@ -26,8 +26,6 @@ import {
   ArrowRight,
   Phone,
   Sparkles,
-  ClipboardList,
-  RotateCcw,
   CheckCircle,
 } from "lucide-react";
 import LifecycleProgressBar from "@/components/dashboard/LifecycleProgressBar";
@@ -985,7 +983,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
             title="Refresh database records"
             className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <RotateCcw className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`} />
+            <Sparkles className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
@@ -1705,7 +1703,7 @@ export default function WorkOrdersView({ role = "DISPATCHER" }: WorkOrdersViewPr
               {/* SECTION 1: JOB SPECIFICATIONS */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                 <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-blue-600" />
+                  <FileText className="w-4 h-4 text-blue-600" />
                   <span>1. Job Specifications</span>
                 </div>
 

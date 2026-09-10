@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, X, ClipboardCheck, Building2, User, Sparkles, Check } from "lucide-react";
+import { CheckCircle2, X, Building2, User, Sparkles, Check } from "lucide-react";
 
 interface CompletionNotesModalProps {
   isOpen: boolean;
@@ -88,7 +88,7 @@ export default function CompletionNotesModal({
         {/* Pre-Flight Checklist */}
         <div className="space-y-2 text-xs">
           <label className="font-bold text-slate-700 flex items-center gap-1.5">
-            <ClipboardCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Field Completion Checklist</span>
           </label>
           <div className="space-y-1.5 p-3 rounded-2xl bg-emerald-50/40 border border-emerald-100">
@@ -97,7 +97,7 @@ export default function CompletionNotesModal({
                 type="checkbox"
                 checked={checklist.workVerified}
                 onChange={(e) => setChecklist({ ...checklist, workVerified: e.target.checked })}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 rounded-md"
+                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded-md"
               />
               <span>Physical work verified and executed according to dispatch specifications</span>
             </label>
@@ -106,7 +106,7 @@ export default function CompletionNotesModal({
                 type="checkbox"
                 checked={checklist.testedHardware}
                 onChange={(e) => setChecklist({ ...checklist, testedHardware: e.target.checked })}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 rounded-md"
+                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded-md"
               />
               <span>Hardware, connections, or network lines tested and certified</span>
             </label>
@@ -115,7 +115,7 @@ export default function CompletionNotesModal({
                 type="checkbox"
                 checked={checklist.customerBriefed}
                 onChange={(e) => setChecklist({ ...checklist, customerBriefed: e.target.checked })}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 rounded-md"
+                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded-md"
               />
               <span>Site contact briefed on resolution & handover completed</span>
             </label>
@@ -134,9 +134,8 @@ export default function CompletionNotesModal({
                 setNotes(e.target.value);
                 if (error) setError("");
               }}
-              className={`w-full px-3 py-2.5 rounded-2xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all resize-none ${
-                error ? "border-rose-300 ring-2 ring-rose-100" : "border-slate-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-              }`}
+              className={`w-full px-3 py-2.5 rounded-2xl border bg-slate-50 focus:bg-white text-slate-900 outline-none transition-all resize-none ${error ? "border-rose-300 ring-2 ring-rose-100" : "border-slate-200 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                }`}
             />
             {error && <span className="text-[10px] text-rose-600 block font-semibold">{error}</span>}
           </div>

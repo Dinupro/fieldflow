@@ -95,7 +95,7 @@ export default function QuickCustomerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
           <div className="flex items-center gap-3">
@@ -134,9 +134,8 @@ export default function QuickCustomerModal({
                   placeholder="e.g. Sarah Jenkins"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${
-                    errors.name ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${errors.name ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
               </div>
               {errors.name && <span className="text-[10px] text-rose-600 block">{errors.name}</span>}
@@ -168,9 +167,8 @@ export default function QuickCustomerModal({
                   placeholder="sarah@apexhealth.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${
-                    errors.email ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${errors.email ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
               </div>
               {errors.email && <span className="text-[10px] text-rose-600 block">{errors.email}</span>}
@@ -186,9 +184,8 @@ export default function QuickCustomerModal({
                   placeholder="+1 (512) 555-0199"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${
-                    errors.phone ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
-                  }`}
+                  className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${errors.phone ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                    }`}
                 />
               </div>
               {errors.phone && <span className="text-[10px] text-rose-600 block">{errors.phone}</span>}
@@ -205,9 +202,8 @@ export default function QuickCustomerModal({
                 placeholder="e.g. 100 Congress Ave, Floor 14"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${
-                  errors.address ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
-                }`}
+                className={`w-full pl-8.5 pr-3 py-2 rounded-xl border bg-slate-50 focus:bg-white text-slate-900 outline-none ${errors.address ? "border-rose-300" : "border-slate-200 focus:border-blue-600"
+                  }`}
               />
             </div>
             {errors.address && <span className="text-[10px] text-rose-600 block">{errors.address}</span>}

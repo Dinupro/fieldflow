@@ -26,7 +26,7 @@ import {
 export default function RegisterPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const [role, setRole] = useState<"customer" | "technician">("customer");
+  const [role, setRole] = useState<"admin" | "dispatcher" | "technician">("dispatcher");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -88,8 +88,10 @@ export default function RegisterPage() {
       newErrors.phone = "Phone number is required for dispatch notifications";
     }
 
-    if (role === "customer" && !formData.companyOrTrade.trim()) {
-      newErrors.companyOrTrade = "Company name is required for customer accounts";
+    if (role === "admin" && !formData.companyOrTrade.trim()) {
+      newErrors.companyOrTrade = "Organization name is required for administrator accounts";
+    } else if (role === "dispatcher" && !formData.companyOrTrade.trim()) {
+      newErrors.companyOrTrade = "Dispatching company name is required for dispatcher accounts";
     } else if (role === "technician" && !formData.companyOrTrade.trim()) {
       newErrors.companyOrTrade = "Please specify your trade/specialization (e.g. Fiber, Network, CCTV)";
     }
@@ -121,12 +123,38 @@ export default function RegisterPage() {
     setIsLoading(true);
     setErrors({});
 
+    const mappedRole = role === "admin" ? "ADMIN" : role === "technician" ? "TECHNICIAN" : "DISPATCHER";
+
     try {
+      // Check if email already exists with an assigned role
+      const checkRes = await fetch("/api/auth/check-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          action: "register",
+        }),
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        if (checkData.exists) {
+          setErrors({
+            general:
+              checkData.message ||
+              "An account with this email already exists. Please proceed to the Sign In portal.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const { error } = await authClient.signUp.email({
         email: formData.email.trim(),
         password: formData.password,
         name: formData.fullName.trim(),
-      });
+        role: mappedRole,
+      } as any);
 
       if (error) {
         setErrors({ general: error.message || "Registration failed. Please check your information." });
@@ -193,14 +221,18 @@ export default function RegisterPage() {
                   <span>Start Free In Under 2 Minutes</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                  {role === "customer"
-                    ? "Dispatch Certified Field Specialists Nationwide"
-                    : "Unlock High-Paying On-Demand Field Work Orders"}
+                  {role === "admin"
+                    ? "Enterprise Administration & Complete RBAC Governance"
+                    : role === "dispatcher"
+                      ? "Dispatch Certified Field Specialists Nationwide"
+                      : "Unlock High-Paying On-Demand Field Work Orders"}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  {role === "customer"
-                    ? "Create service requests, get AI-matched with verified technicians in minutes, track live GPS arrivals, and settle invoices with automated escrow."
-                    : "Receive high-paying local dispatch tickets matched to your exact trade skills, get guaranteed next-day direct pay, and manage everything from the mobile app."}
+                  {role === "admin"
+                    ? "Complete system control: oversee organizations, manage user roles & RBAC permissions, audit system logs, and configure platform settings."
+                    : role === "dispatcher"
+                      ? "Create work orders, track technician GPS arrivals in real time, manage customer CRM accounts, and coordinate field dispatching."
+                      : "Receive local dispatch tickets matched to your trade skills, log on-site milestone deliverables with completion notes, and manage your mobile queue."}
                 </p>
               </div>
 
@@ -259,48 +291,88 @@ export default function RegisterPage() {
                   Create Your FieldFlow Account
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500">
-                  Choose your account role (Customer or Technician) and fill out the details below.
+                  Choose your account role (Admin, Dispatcher, or Technician) to get started.
                 </p>
               </div>
 
-              {/* Role Selection Tabs (Customer vs Technician) */}
+              {/* Role Selection Tabs (Admin vs Dispatcher vs Technician) */}
               <div className="mb-6 space-y-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Choose Your Role *
+                  Select Your Account Role *
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Customer Option */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Admin Option */}
                   <div
                     onClick={() => {
-                      setRole("customer");
+                      setRole("admin");
                       setErrors({});
                     }}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${role === "customer"
-                        ? "border-blue-600 bg-blue-50/40 shadow-xs"
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-2 text-left ${
+                      role === "admin"
+                        ? "border-purple-600 bg-purple-50/50 shadow-xs ring-2 ring-purple-400/20"
                         : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
+                    }`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${role === "customer"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-100 text-slate-500"
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          role === "admin"
+                            ? "bg-purple-600 text-white"
+                            : "bg-slate-100 text-slate-500"
                         }`}
-                    >
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-0.5 grow">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-slate-900">
-                          Customer
-                        </span>
-                        {role === "customer" && (
-                          <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-3" />
-                          </span>
-                        )}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-tight">
-                        I need to hire, dispatch, and manage field technicians.
+                      {role === "admin" && (
+                        <span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-3" />
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block">
+                        Admin
+                      </span>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Full RBAC, team & system governance.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dispatcher Option */}
+                  <div
+                    onClick={() => {
+                      setRole("dispatcher");
+                      setErrors({});
+                    }}
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-2 text-left ${
+                      role === "dispatcher"
+                        ? "border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-400/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          role === "dispatcher"
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      {role === "dispatcher" && (
+                        <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-3" />
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block">
+                        Dispatcher
+                      </span>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Work orders, schedules & CRM management.
                       </p>
                     </div>
                   </div>
@@ -311,32 +383,34 @@ export default function RegisterPage() {
                       setRole("technician");
                       setErrors({});
                     }}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${role === "technician"
-                        ? "border-blue-600 bg-blue-50/40 shadow-xs"
+                    className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-2 text-left ${
+                      role === "technician"
+                        ? "border-emerald-600 bg-emerald-50/50 shadow-xs ring-2 ring-emerald-400/20"
                         : "border-slate-200 hover:border-slate-300 bg-white"
-                      }`}
+                    }`}
                   >
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${role === "technician"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-100 text-slate-500"
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          role === "technician"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-slate-100 text-slate-500"
                         }`}
-                    >
-                      <Wrench className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-0.5 grow">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-slate-900">
-                          Technician
-                        </span>
-                        {role === "technician" && (
-                          <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-3" />
-                          </span>
-                        )}
+                      >
+                        <Wrench className="w-4 h-4" />
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-tight">
-                        I am a field specialist looking for work orders.
+                      {role === "technician" && (
+                        <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-3" />
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block">
+                        Technician
+                      </span>
+                      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Field jobs queue & on-site job completion.
                       </p>
                     </div>
                   </div>
@@ -352,7 +426,11 @@ export default function RegisterPage() {
                   <div className="space-y-1">
                     <h3 className="text-xl font-extrabold">Account Created Successfully!</h3>
                     <p className="text-xs sm:text-sm text-emerald-700 max-w-md mx-auto">
-                      Welcome to FieldFlow, <strong>{formData.fullName}</strong>. We have sent a confirmation email to <strong>{formData.email}</strong> to activate your {role === "customer" ? "Customer Command Center" : "Technician Workspace"}.
+                      Welcome to FieldFlow, <strong>{formData.fullName}</strong>. Your account has been registered with the{" "}
+                      <strong>
+                        {role === "admin" ? "Administrator" : role === "dispatcher" ? "Dispatcher" : "Technician"}
+                      </strong>{" "}
+                      role. You can now sign in to your workspace.
                     </p>
                   </div>
                   <div className="pt-3">
@@ -389,12 +467,13 @@ export default function RegisterPage() {
                         />
                         <input
                           type="text"
+                          autoComplete="name"
                           value={formData.fullName}
                           onChange={(e) => {
                             setFormData({ ...formData, fullName: e.target.value });
                             clearError("fullName");
                           }}
-                          placeholder={role === "customer" ? "Marcus Vance" : "Devon Miller"}
+                          placeholder={role === "admin" ? "Alex Rivera" : role === "dispatcher" ? "Jordan Hayes" : "Devon Miller"}
                           className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.fullName
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
                               : "border-slate-300 focus:border-blue-500 focus:ring-blue-100"
@@ -412,7 +491,7 @@ export default function RegisterPage() {
                     {/* Email */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        {role === "customer" ? "Work Email *" : "Email Address *"}
+                        {role === "admin" ? "Work Email (Admin) *" : role === "dispatcher" ? "Work Email (Dispatcher) *" : "Email Address (Technician) *"}
                       </label>
                       <div className="relative">
                         <Mail
@@ -421,15 +500,18 @@ export default function RegisterPage() {
                         />
                         <input
                           type="email"
+                          autoComplete="email"
                           value={formData.email}
                           onChange={(e) => {
                             setFormData({ ...formData, email: e.target.value });
                             clearError("email");
                           }}
                           placeholder={
-                            role === "customer"
-                              ? "dispatcher@company.com"
-                              : "technician@email.com"
+                            role === "admin"
+                              ? "admin@company.com"
+                              : role === "dispatcher"
+                                ? "dispatcher@company.com"
+                                : "technician@fieldflow.net"
                           }
                           className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.email
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
@@ -460,6 +542,7 @@ export default function RegisterPage() {
                         />
                         <input
                           type="tel"
+                          autoComplete="tel"
                           value={formData.phone}
                           onChange={(e) => {
                             setFormData({ ...formData, phone: e.target.value });
@@ -480,13 +563,17 @@ export default function RegisterPage() {
                       )}
                     </div>
 
-                    {/* Company Name (Customer) or Trade (Technician) */}
+                    {/* Company Name / Specialization */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        {role === "customer" ? "Company Name *" : "Primary Trade Specialization *"}
+                        {role === "admin"
+                          ? "Organization / Enterprise Name *"
+                          : role === "dispatcher"
+                            ? "Dispatching Company / Agency *"
+                            : "Primary Trade Specialization *"}
                       </label>
                       <div className="relative">
-                        {role === "customer" ? (
+                        {role === "admin" || role === "dispatcher" ? (
                           <Building2
                             className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${errors.companyOrTrade ? "text-rose-500" : "text-slate-400"
                               }`}
@@ -499,15 +586,18 @@ export default function RegisterPage() {
                         )}
                         <input
                           type="text"
+                          autoComplete="organization"
                           value={formData.companyOrTrade}
                           onChange={(e) => {
                             setFormData({ ...formData, companyOrTrade: e.target.value });
                             clearError("companyOrTrade");
                           }}
                           placeholder={
-                            role === "customer"
-                              ? "Apex Logistics & Retail Hubs"
-                              : "Fiber Splicing / Cat6A Cabling / CCNA"
+                            role === "admin"
+                              ? "Acme Global Operations Inc."
+                              : role === "dispatcher"
+                                ? "Apex Logistics & Dispatch Hubs"
+                                : "Fiber Splicing / Cat6A Cabling / CCNA"
                           }
                           className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 bg-white border transition-all focus:outline-none focus:ring-2 ${errors.companyOrTrade
                               ? "border-rose-400 focus:ring-rose-200 bg-rose-50/20"
@@ -540,6 +630,7 @@ export default function RegisterPage() {
                         />
                         <input
                           type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           value={formData.password}
                           onChange={(e) => {
                             setFormData({ ...formData, password: e.target.value });
@@ -618,6 +709,7 @@ export default function RegisterPage() {
                         />
                         <input
                           type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           value={formData.confirmPassword}
                           onChange={(e) => {
                             setFormData({ ...formData, confirmPassword: e.target.value });

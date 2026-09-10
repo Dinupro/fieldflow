@@ -4,14 +4,12 @@ import React, { useState } from "react";
 import {
   Building2,
   Wrench,
-  FilePlus,
-  PlayCircle,
+  Plus,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
   Sparkles,
   ArrowRight,
-  Info,
+  AlertCircle,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
@@ -61,7 +59,7 @@ export default function WorkOrderWorkflowGuide({
       title: "3. Dispatch Work Order",
       roleText: "Dispatcher / Admin",
       desc: "Assign technician, set priority (Urgent/High), scheduled SLA date, and detailed work scope.",
-      icon: FilePlus,
+      icon: Plus,
       color: "bg-teal-600 text-white",
       borderColor: "border-teal-200",
       activeFor: role !== "TECHNICIAN",
@@ -73,7 +71,7 @@ export default function WorkOrderWorkflowGuide({
       title: "4. Technician 'My Jobs' Execution",
       roleText: "Field Technician",
       desc: "Technician logs in, views assigned queue, clicks 'Accept' and 'Start Job' to begin work on-site.",
-      icon: PlayCircle,
+      icon: Wrench,
       color: "bg-purple-600 text-white",
       borderColor: "border-purple-200",
       activeFor: role === "TECHNICIAN",
@@ -91,7 +89,7 @@ export default function WorkOrderWorkflowGuide({
   ];
 
   return (
-    <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-blue-50/30 p-4 sm:p-5 shadow-xs">
+    <div className="rounded-3xl border border-slate-200/90 bg-linear-to-br from-white via-slate-50/50 to-blue-50/30 p-4 sm:p-5 shadow-xs">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20">
@@ -120,7 +118,7 @@ export default function WorkOrderWorkflowGuide({
           className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs shrink-0"
         >
           <span className="hidden sm:inline">{expanded ? "Hide Workflow" : "View Workflow"}</span>
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -132,11 +130,10 @@ export default function WorkOrderWorkflowGuide({
               return (
                 <div
                   key={step.num}
-                  className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between ${
-                    step.activeFor
+                  className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between ${step.activeFor
                       ? "bg-white border-blue-200/90 shadow-sm ring-2 ring-blue-500/10"
                       : "bg-slate-50/70 border-slate-200/70 opacity-90"
-                  }`}
+                    }`}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -173,7 +170,7 @@ export default function WorkOrderWorkflowGuide({
           {/* Contextual Banner for active role */}
           <div className="p-3 rounded-2xl bg-blue-50/80 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
             <div className="flex items-center gap-2 text-blue-900 font-semibold">
-              <Info className="w-4 h-4 text-blue-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-blue-600 shrink-0" />
               <span>
                 {role === "TECHNICIAN" ? (
                   <>
