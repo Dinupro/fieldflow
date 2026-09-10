@@ -9,7 +9,9 @@
   "/api/technicians/route": "app/api/technicians/route.js",
   "/api/work-orders/route": "app/api/work-orders/route.js",
   "/dashboard/page": "app/dashboard/page.js",
+  "/dispatcher/dashboard/page": "app/dispatcher/dashboard/page.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/register/page": "app/register/page.js"
+  "/register/page": "app/register/page.js",
+  "/technician/dashboard/page": "app/technician/dashboard/page.js"
 }
