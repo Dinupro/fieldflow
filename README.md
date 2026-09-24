@@ -26,8 +26,10 @@
 ### 📋 Table of Contents
 
 1. [Project Overview](#-project-overview)
-2. [End-to-End Operational Workflow](#-end-to-end-operational-workflow)
-3. [Key Features](#-features)
+   - [Presentation (PDF)](#presentation)
+   - [Final Report (PDF)](#final-report)
+3. [End-to-End Operational Workflow](#-end-to-end-operational-workflow)
+4. [Key Features](#-features)
    - [Enterprise RBAC & Role Matrix](#-enterprise-role-based-access-control-rbac)
    - [1-Click Instant Demo Authentication](#-demo-accounts--instant-1-click-access)
    - [Zod Schema Validation & Duplicate Prevention](#-schema-validation--duplicate-prevention-zod-engine)
@@ -37,20 +39,20 @@
    - [Work Order Lifecycle State Machine](#-work-order-lifecycle-orchestration--immutable-status-logs)
    - [Activity Log & SOC 2 Audit Trail](#-enterprise-activity-log--audit-trail-soc-2-compliance)
    - [Real-Time In-App Notifications](#-real-time-in-app-notification-system)
-4. [Technology Stack](#-technology-stack)
-5. [Architecture Overview](#-architecture-overview)
-6. [Database Schema (Neon PostgreSQL + Prisma)](#-database-setup-neon-postgresql--prisma-orm)
-7. [Folder Structure](#-folder-structure)
-8. [Installation & Setup](#-installation--setup)
-9. [Environment Variables](#-environment-variables)
-10. [Authentication Setup (Better Auth)](#-authentication-setup-better-auth)
-11. [Development & Build Commands](#-running-the-application)
-12. [API Architecture & Endpoints](#-api-architecture--endpoints)
-13. [UI Showcase & Diagrams](#-diagrams--ui-showcase)
-14. [Testing & Quality Assurance](#-testing--quality-assurance)
-15. [Deployment Guide](#-deployment-guide)
-16. [Future Roadmap](#-future-roadmap)
-17. [Contributors & License](#-contributors--license)
+5. [Technology Stack](#-technology-stack)
+6. [Architecture Overview](#-architecture-overview)
+7. [Database Schema (Neon PostgreSQL + Prisma)](#-database-setup-neon-postgresql--prisma-orm)
+8. [Folder Structure](#-folder-structure)
+9. [Installation & Setup](#-installation--setup)
+10. [Environment Variables](#-environment-variables)
+11. [Authentication Setup (Better Auth)](#-authentication-setup-better-auth)
+12. [Development & Build Commands](#-running-the-application)
+13. [API Architecture & Endpoints](#-api-architecture--endpoints)
+14. [UI Showcase & Diagrams](#-diagrams--ui-showcase)
+15. [Testing & Quality Assurance](#-testing--quality-assurance)
+16. [Deployment Guide](#-deployment-guide)
+17. [Future Roadmap](#-future-roadmap)
+18. [Contributors & License](#-contributors--license)
 
 ---
 
@@ -68,6 +70,20 @@ Built using the modern **Next.js App Router**, **React 19**, and **Tailwind CSS*
 - **Zero-Latency Analytics**: Aggregate performance metrics via database `groupBy` and aggregation pipelines.
 
 ---
+
+## 📚 Project Documents
+
+### 📊 Presentation
+- [FieldFlow Presentation (PDF)](docs/Fieldflow%20presentation/FieldFlow_Presentation.pdf)
+
+### 📄 Final Report
+- [FieldFlow Final Report (PDF)](docs/Final%20Project%20Report/FieldFlow_Final_Report.pdf)
+
+### 📖 Documentation
+- [Architecture](docs/ARCHITECTURE.md)
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [User Manual](docs/USER_MANUAL.md)
+- [Testing Report](docs/TESTING_REPORT.md)
 
 ## 🔄 End-to-End Operational Workflow
 
